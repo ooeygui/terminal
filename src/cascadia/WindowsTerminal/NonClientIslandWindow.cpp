@@ -970,6 +970,7 @@ void NonClientIslandWindow::_UpdateFrameMargins() const noexcept
         // GH#4166: When the DPI of the monitor changes out from underneath us,
         // resize our drag bar, to reflect its newly scaled size.
         _ResizeDragBarWindow();
+        DesktopWallpaperChanged.raise(true, 0, 0);
         return 0;
     case WM_NCCALCSIZE:
         return _OnNcCalcSize(wParam, lParam);

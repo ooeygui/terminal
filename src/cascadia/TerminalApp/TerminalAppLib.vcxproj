@@ -88,6 +88,8 @@
     <ClInclude Include="Commandline.h" />
     <ClInclude Include="CommandPaletteItems.h" />
     <ClInclude Include="Jumplist.h" />
+    <ClInclude Include="DesktopWallpaper.h" />
+    <ClInclude Include="DesktopWallpaperGeometry.h" />
     <ClInclude Include="LanguageProfileNotifier.h" />
     <ClInclude Include="MinMaxCloseControl.h">
       <DependentUpon>MinMaxCloseControl.xaml</DependentUpon>
@@ -213,6 +215,7 @@
       <DependentUpon>TerminalPage.xaml</DependentUpon>
       <SubType>Code</SubType>
     </ClCompile>
+    <ClCompile Include="DesktopWallpaper.cpp" />
     <ClCompile Include="TabManagement.cpp">
       <DependentUpon>TerminalPage.xaml</DependentUpon>
       <SubType>Code</SubType>

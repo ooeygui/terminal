@@ -190,6 +190,7 @@ private:
         winrt::event_token MouseScrolled;
         winrt::event_token WindowActivated;
         winrt::event_token WindowMoved;
+        winrt::event_token DesktopWallpaperChanged;
         winrt::event_token ShouldExitFullscreen;
         winrt::event_token WindowCloseButtonClicked;
         winrt::event_token DragRegionClicked;

@@ -23,6 +23,8 @@
 #include "SnippetsPaneContent.h"
 #include "TabRowControl.h"
 #include "TerminalSettingsCache.h"
+#include "DesktopWallpaper.h"
+#include "DesktopWallpaperGeometry.h"
 
 #include "LaunchPositionRequest.g.cpp"
 #include "WindowListEntry.g.cpp"
@@ -4027,6 +4029,46 @@ namespace winrt::TerminalApp::implementation
     // - <none>
     void TerminalPage::_SetBackgroundImage(const winrt::Microsoft::Terminal::Settings::Model::IAppearanceConfig& newAppearance)
     {
+        const auto desktopRelative = _currentWindowSettings().UseBackgroundImageForWindow() &&
+                                     _currentWindowSettings().BackgroundImageRelativeToDesktop() &&
+                                     til::equals_insensitive_ascii(newAppearance.BackgroundImagePath().Path(), L"desktopWallpaper");
+        const auto wasDesktopRelative = std::exchange(_desktopWallpaperEnabled, desktopRelative);
+        if (desktopRelative)
+        {
+            const auto settings = _currentWindowSettings();
+            const auto tint = settings.DesktopWallpaperTint();
+            const ::TerminalApp::DesktopWallpaper::Effects effects{
+                settings.DesktopWallpaperBlur(),
+                settings.DesktopWallpaperSaturation(),
+                RGB(tint.R, tint.G, tint.B),
+                settings.DesktopWallpaperTintOpacity()
+            };
+            const auto effectsChanged = std::exchange(_desktopWallpaperEffects, effects) != effects;
+            _tabContent.Background(nullptr);
+            DesktopWallpaperCanvas().Opacity(newAppearance.BackgroundImageOpacity());
+            if (!wasDesktopRelative)
+            {
+                _desktopWallpaperLayoutRevoker = DesktopWallpaperCanvas().LayoutUpdated(winrt::auto_revoke, [weak = get_weak()](auto&&, auto&&) {
+                    if (const auto page = weak.get())
+                    {
+                        page->_PositionDesktopWallpaper();
+                    }
+                });
+            }
+            if (!wasDesktopRelative || effectsChanged)
+            {
+                _ReloadDesktopWallpaper();
+            }
+            _PositionDesktopWallpaper();
+            return;
+        }
+        if (wasDesktopRelative)
+        {
+            ++_desktopWallpaperGeneration;
+            _desktopWallpaperLayoutRevoker.revoke();
+            _desktopWallpaperPresenter.reset();
+            _desktopWallpaperMonitors.clear();
+        }
         if (!_currentWindowSettings().UseBackgroundImageForWindow())
         {
             _tabContent.Background(nullptr);
@@ -4078,6 +4120,115 @@ namespace winrt::TerminalApp::implementation
         {
             newBrush.Stretch(newAppearance.BackgroundImageStretchMode());
             newBrush.Opacity(newAppearance.BackgroundImageOpacity());
+        }
+    }
+
+    void TerminalPage::UpdateDesktopWallpaper(const uint64_t islandHwnd, const bool reload, const double offsetX, const double offsetY)
+    {
+        _desktopWallpaperHwnd = reinterpret_cast<HWND>(islandHwnd);
+        if (!_desktopWallpaperHwnd)
+        {
+            ++_desktopWallpaperGeneration;
+            _desktopWallpaperPresenter.reset();
+            _desktopWallpaperMonitors.clear();
+            return;
+        }
+        if (_desktopWallpaperEnabled)
+        {
+            if (reload)
+            {
+                _ReloadDesktopWallpaper();
+            }
+            _PositionDesktopWallpaper(offsetX, offsetY);
+        }
+    }
+
+    winrt::fire_and_forget TerminalPage::_ReloadDesktopWallpaper()
+    {
+        const auto weak = get_weak();
+        const auto dispatcher = Dispatcher();
+        const auto generation = ++_desktopWallpaperGeneration;
+        const auto effects = _desktopWallpaperEffects;
+        try
+        {
+            co_await winrt::resume_background();
+            auto monitors = ::TerminalApp::DesktopWallpaper::Load(effects);
+            co_await wil::resume_foreground(dispatcher);
+            const auto page = weak.get();
+            if (!page || generation != page->_desktopWallpaperGeneration)
+            {
+                co_return;
+            }
+            page->_desktopWallpaperMonitors = std::move(monitors);
+            if (page->_desktopWallpaperMonitors.empty())
+            {
+                page->_desktopWallpaperPresenter.reset();
+            }
+            page->_PositionDesktopWallpaper();
+            co_return;
+        }
+        catch (...)
+        {
+            LOG_CAUGHT_EXCEPTION();
+        }
+        try
+        {
+            co_await wil::resume_foreground(dispatcher);
+            if (const auto page = weak.get(); page && generation == page->_desktopWallpaperGeneration)
+            {
+                page->_desktopWallpaperPresenter.reset();
+                page->_desktopWallpaperMonitors.clear();
+            }
+        }
+        CATCH_LOG();
+    }
+
+    void TerminalPage::_PositionDesktopWallpaper(const double offsetX, const double offsetY)
+    {
+        if (!_desktopWallpaperEnabled || !_desktopWallpaperHwnd || !XamlRoot())
+        {
+            return;
+        }
+        try
+        {
+            const auto parent = GetParent(_desktopWallpaperHwnd);
+            THROW_HR_IF(E_UNEXPECTED, !parent);
+            if (!_desktopWallpaperMonitors.empty())
+            {
+                if (!_desktopWallpaperPresenter)
+                {
+                    _desktopWallpaperPresenter = std::make_unique<::TerminalApp::DesktopWallpaper::Presenter>(parent);
+                }
+                _desktopWallpaperPresenter->SetMonitors(_desktopWallpaperMonitors);
+                _desktopWallpaperMonitors.clear();
+            }
+            if (!_desktopWallpaperPresenter)
+            {
+                return;
+            }
+            POINT islandOrigin{};
+            THROW_IF_WIN32_BOOL_FALSE(ClientToScreen(_desktopWallpaperHwnd, &islandOrigin));
+            POINT parentOrigin{};
+            THROW_IF_WIN32_BOOL_FALSE(ClientToScreen(parent, &parentOrigin));
+            const auto canvas = DesktopWallpaperCanvas();
+            const auto offset = canvas.TransformToVisual(nullptr).TransformPoint({});
+            const auto scale = XamlRoot().RasterizationScale();
+            const auto originX = std::lround(islandOrigin.x + offset.X * scale);
+            const auto originY = std::lround(islandOrigin.y + offset.Y * scale);
+            const auto left = originX - parentOrigin.x;
+            const auto top = originY - parentOrigin.y;
+            const RECT bounds{
+                left, top,
+                left + static_cast<LONG>(std::ceil(canvas.ActualWidth() * scale)),
+                top + static_cast<LONG>(std::ceil(canvas.ActualHeight() * scale))
+            };
+            _desktopWallpaperPresenter->Position(bounds, originX + offsetX, originY + offsetY, static_cast<float>(canvas.Opacity()));
+        }
+        catch (...)
+        {
+            LOG_CAUGHT_EXCEPTION();
+            _desktopWallpaperPresenter.reset();
+            _desktopWallpaperMonitors.clear();
         }
     }
 

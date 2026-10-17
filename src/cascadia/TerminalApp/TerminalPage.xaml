@@ -42,6 +42,10 @@
             </mux:InfoBar>
         </StackPanel>
 
+        <Canvas x:Name="DesktopWallpaperCanvas"
+                Grid.Row="2"
+                IsHitTestVisible="False" />
+
         <Grid x:Name="TabContent"
               Grid.Row="2"
               HorizontalAlignment="Stretch"

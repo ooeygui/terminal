@@ -95,6 +95,7 @@ namespace TerminalApp
         void TitlebarClicked();
         void CloseWindow();
         void WindowVisibilityChanged(Boolean showOrHide);
+        void UpdateDesktopWallpaper(UInt64 islandHwnd, Boolean reload, Double offsetX, Double offsetY);
 
         TaskbarState TaskbarState{ get; };
         Windows.UI.Xaml.Media.Brush TitlebarBrush { get; };

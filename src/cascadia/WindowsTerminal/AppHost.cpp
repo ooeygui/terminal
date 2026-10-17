@@ -74,6 +74,12 @@ AppHost::AppHost(WindowEmperor* manager, const winrt::TerminalApp::AppLogic& log
     _windowCallbacks.MouseScrolled = _window->MouseScrolled({ this, &AppHost::_WindowMouseWheeled });
     _windowCallbacks.WindowActivated = _window->WindowActivated({ this, &AppHost::_WindowActivated });
     _windowCallbacks.WindowMoved = _window->WindowMoved({ this, &AppHost::_WindowMoved });
+    _windowCallbacks.DesktopWallpaperChanged = _window->DesktopWallpaperChanged([this](const bool reload, const double offsetX, const double offsetY) {
+        if (_windowLogic)
+        {
+            _windowLogic.UpdateDesktopWallpaper(reinterpret_cast<uint64_t>(_window->GetInteropHandle()), reload, offsetX, offsetY);
+        }
+    });
     _windowCallbacks.ShouldExitFullscreen = _window->ShouldExitFullscreen({ &_windowLogic, &winrt::TerminalApp::TerminalWindow::RequestExitFullscreen });
 
     _window->MakeWindow();
@@ -321,6 +327,7 @@ void AppHost::Initialize()
     // Set up the content of the application. If the app has a custom titlebar,
     // set that content as well.
     _window->SetContent(_windowLogic.GetRoot());
+    _windowLogic.UpdateDesktopWallpaper(reinterpret_cast<uint64_t>(_window->GetInteropHandle()), false, 0, 0);
     _window->OnAppInitialized();
 }
 
@@ -334,6 +341,10 @@ void AppHost::Close()
 
     _revokeWindowCallbacks();
 
+    if (_windowLogic)
+    {
+        _windowLogic.UpdateDesktopWallpaper(0, false, 0, 0);
+    }
     _window->Close();
 
     if (_windowLogic)
@@ -404,6 +415,7 @@ void AppHost::_revokeWindowCallbacks()
     _window->MouseScrolled(_windowCallbacks.MouseScrolled);
     _window->WindowActivated(_windowCallbacks.WindowActivated);
     _window->WindowMoved(_windowCallbacks.WindowMoved);
+    _window->DesktopWallpaperChanged(_windowCallbacks.DesktopWallpaperChanged);
     _window->ShouldExitFullscreen(_windowCallbacks.ShouldExitFullscreen);
     _window->WindowCloseButtonClicked(_windowCallbacks.WindowCloseButtonClicked);
     _window->DragRegionClicked(_windowCallbacks.DragRegionClicked);

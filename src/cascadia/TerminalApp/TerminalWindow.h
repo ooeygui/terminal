@@ -123,6 +123,7 @@ namespace winrt::TerminalApp::implementation
 
         void CloseWindow();
         void WindowVisibilityChanged(const bool showOrHide);
+        void UpdateDesktopWallpaper(uint64_t islandHwnd, bool reload, double offsetX, double offsetY);
 
         winrt::TerminalApp::TaskbarState TaskbarState();
         winrt::Windows::UI::Xaml::Media::Brush TitlebarBrush();

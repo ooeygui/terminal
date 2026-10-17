@@ -22,6 +22,7 @@
   <!-- ========================= Cpp Files ======================== -->
   <ItemGroup>
     <ClCompile Include="JsonUtilsTests.cpp" />
+    <ClCompile Include="DesktopWallpaperTests.cpp" />
     <ClCompile Include="FzfTests.cpp" />
     <ClCompile Include="precomp.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
@@ -47,7 +48,7 @@
       <DisableSpecificWarnings>4702;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>WindowsApp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>WindowsApp.lib;d3d11.lib;d2d1.lib;dcomp.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <!--
       SettingsModelLib contains a DllMain that we need to force the use of.
       If you don't have this, then you'll see an error like

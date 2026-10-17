@@ -21,6 +21,7 @@
     <ClCompile Include="Commandline.cpp" />
     <ClCompile Include="DebugTapConnection.cpp" />
     <ClCompile Include="Jumplist.cpp" />
+    <ClCompile Include="DesktopWallpaper.cpp" />
     <ClCompile Include="FilteredCommand.cpp">
       <Filter>commandPalette</Filter>
     </ClCompile>
@@ -46,6 +47,8 @@
     <ClInclude Include="Commandline.h" />
     <ClInclude Include="DebugTapConnection.h" />
     <ClInclude Include="Jumplist.h" />
+    <ClInclude Include="DesktopWallpaper.h" />
+    <ClInclude Include="DesktopWallpaperGeometry.h" />
     <ClInclude Include="FilteredCommand.h">
       <Filter>commandPalette</Filter>
     </ClInclude>

@@ -84,6 +84,7 @@ public:
     til::event<winrt::delegate<void(bool)>> MaximizeChanged;
 
     til::event<winrt::delegate<void()>> WindowMoved;
+    til::event<winrt::delegate<void(bool, double, double)>> DesktopWallpaperChanged;
     til::event<winrt::delegate<void(bool)>> WindowVisibilityChanged;
 
 protected:

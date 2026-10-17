@@ -852,6 +852,14 @@ namespace winrt::TerminalApp::implementation
         }
     }
 
+    void TerminalWindow::UpdateDesktopWallpaper(const uint64_t islandHwnd, const bool reload, const double offsetX, const double offsetY)
+    {
+        if (_root)
+        {
+            _root->UpdateDesktopWallpaper(islandHwnd, reload, offsetX, offsetY);
+        }
+    }
+
     // Method Description:
     // - Implements the F7 handler (per GH#638)
     // - Implements the Alt handler (per GH#6421)

@@ -28,6 +28,7 @@ namespace SettingsModelUnitTests
         TEST_METHOD(ValidateDuplicateProfiles);
         TEST_METHOD(ValidateManyWarnings);
         TEST_METHOD(LayerGlobalProperties);
+        TEST_METHOD(DesktopRelativeWallpaperSetting);
         TEST_METHOD(ValidateProfileOrdering);
         TEST_METHOD(ValidateHideProfiles);
         TEST_METHOD(TestReorderWithNullGuids);
@@ -380,6 +381,62 @@ namespace SettingsModelUnitTests
         VERIFY_ARE_EQUAL(240, settings->WindowSettingsDefaults().InitialCols());
         VERIFY_ARE_EQUAL(60, settings->WindowSettingsDefaults().InitialRows());
         VERIFY_ARE_EQUAL(false, settings->WindowSettingsDefaults().ShowTabsInTitlebar());
+    }
+
+    void DeserializationTests::DesktopRelativeWallpaperSetting()
+    {
+        const auto defaults = createSettings(R"({"profiles":[{"name":"test"}]})");
+        VERIFY_IS_FALSE(defaults->WindowSettingsDefaults().BackgroundImageRelativeToDesktop());
+        VERIFY_ARE_EQUAL(0.0f, defaults->WindowSettingsDefaults().DesktopWallpaperBlur());
+        VERIFY_ARE_EQUAL(1.0f, defaults->WindowSettingsDefaults().DesktopWallpaperSaturation());
+        VERIFY_ARE_EQUAL(0.0f, defaults->WindowSettingsDefaults().DesktopWallpaperTintOpacity());
+        VERIFY_ARE_EQUAL(winrt::Windows::UI::Colors::Black(), defaults->WindowSettingsDefaults().DesktopWallpaperTint());
+
+        const auto settings = createSettings(R"({
+            "experimental.backgroundImageRelativeToDesktop": true,
+            "experimental.useBackgroundImageForWindow": true,
+            "experimental.desktopWallpaperBlur": 12.5,
+            "experimental.desktopWallpaperSaturation": 0.25,
+            "experimental.desktopWallpaperTint": "#123456",
+            "experimental.desktopWallpaperTintOpacity": 0.4,
+            "profiles": [{"name":"test"}]
+        })");
+        VERIFY_IS_TRUE(settings->WindowSettingsDefaults().BackgroundImageRelativeToDesktop());
+        VERIFY_IS_TRUE(settings->WindowSettingsDefaults().UseBackgroundImageForWindow());
+        const auto copy = settings->Copy();
+        VERIFY_IS_TRUE(winrt::get_self<implementation::CascadiaSettings>(copy)->WindowSettingsDefaults().BackgroundImageRelativeToDesktop());
+        VERIFY_IS_TRUE(settings->ToJson()["experimental.backgroundImageRelativeToDesktop"].asBool());
+        const auto copied = winrt::get_self<implementation::CascadiaSettings>(copy)->WindowSettingsDefaults();
+        VERIFY_ARE_EQUAL(12.5f, copied.DesktopWallpaperBlur());
+        VERIFY_ARE_EQUAL(0.25f, copied.DesktopWallpaperSaturation());
+        VERIFY_ARE_EQUAL(0.4f, copied.DesktopWallpaperTintOpacity());
+        VERIFY_ARE_EQUAL(uint8_t{ 0x12 }, copied.DesktopWallpaperTint().R);
+        VERIFY_ARE_EQUAL(uint8_t{ 0x34 }, copied.DesktopWallpaperTint().G);
+        VERIFY_ARE_EQUAL(uint8_t{ 0x56 }, copied.DesktopWallpaperTint().B);
+        const auto json = settings->ToJson();
+        VERIFY_ARE_EQUAL(12.5f, json["experimental.desktopWallpaperBlur"].asFloat());
+        VERIFY_ARE_EQUAL(0.25f, json["experimental.desktopWallpaperSaturation"].asFloat());
+        VERIFY_ARE_EQUAL(0.4f, json["experimental.desktopWallpaperTintOpacity"].asFloat());
+        VERIFY_ARE_EQUAL(std::string{ "#123456" }, json["experimental.desktopWallpaperTint"].asString());
+        const auto roundTrip = createSettings(json.toStyledString());
+        VERIFY_ARE_EQUAL(copied.DesktopWallpaperTint(), roundTrip->WindowSettingsDefaults().DesktopWallpaperTint());
+
+        const auto clamped = createSettings(R"({
+            "experimental.desktopWallpaperBlur": 1000,
+            "experimental.desktopWallpaperSaturation": -1,
+            "experimental.desktopWallpaperTintOpacity": 2,
+            "profiles": [{"name":"test"}]
+        })")->WindowSettingsDefaults();
+        VERIFY_ARE_EQUAL(250.0f, clamped.DesktopWallpaperBlur());
+        VERIFY_ARE_EQUAL(0.0f, clamped.DesktopWallpaperSaturation());
+        VERIFY_ARE_EQUAL(1.0f, clamped.DesktopWallpaperTintOpacity());
+
+        const auto layered = winrt::make_self<implementation::CascadiaSettings>(
+            R"({"experimental.desktopWallpaperSaturation":0.5,"profiles":[{"name":"test"}]})",
+            R"({"experimental.desktopWallpaperBlur":8,"experimental.desktopWallpaperTint":"#abcdef"})");
+        VERIFY_ARE_EQUAL(8.0f, layered->WindowSettingsDefaults().DesktopWallpaperBlur());
+        VERIFY_ARE_EQUAL(0.5f, layered->WindowSettingsDefaults().DesktopWallpaperSaturation());
+        VERIFY_ARE_EQUAL(uint8_t{ 0xab }, layered->WindowSettingsDefaults().DesktopWallpaperTint().R);
     }
 
     void DeserializationTests::ValidateProfileOrdering()

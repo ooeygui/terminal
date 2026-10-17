@@ -4,6 +4,7 @@
 #pragma once
 
 #include <ThrottledFunc.h>
+#include "DesktopWallpaper.h"
 
 #include "TerminalPage.g.h"
 #include "Tab.h"
@@ -161,6 +162,7 @@ namespace winrt::TerminalApp::implementation
 
         void TitlebarClicked();
         void WindowVisibilityChanged(const bool showOrHide);
+        void UpdateDesktopWallpaper(uint64_t islandHwnd, bool reload, double offsetX, double offsetY);
 
         float CalcSnappedDimension(const bool widthOrHeight, const float dimension) const;
 
@@ -278,6 +280,15 @@ namespace winrt::TerminalApp::implementation
         Microsoft::UI::Xaml::Controls::TabView _tabView{ nullptr };
         TerminalApp::TabRowControl _tabRow{ nullptr };
         Windows::UI::Xaml::Controls::Grid _tabContent{ nullptr };
+        std::unique_ptr<::TerminalApp::DesktopWallpaper::Presenter> _desktopWallpaperPresenter;
+        std::vector<::TerminalApp::DesktopWallpaper::Monitor> _desktopWallpaperMonitors;
+        HWND _desktopWallpaperHwnd{ nullptr };
+        bool _desktopWallpaperEnabled{ false };
+        uint64_t _desktopWallpaperGeneration{ 0 };
+        ::TerminalApp::DesktopWallpaper::Effects _desktopWallpaperEffects;
+        Windows::UI::Xaml::FrameworkElement::LayoutUpdated_revoker _desktopWallpaperLayoutRevoker;
+        winrt::fire_and_forget _ReloadDesktopWallpaper();
+        void _PositionDesktopWallpaper(double offsetX = 0, double offsetY = 0);
         Microsoft::UI::Xaml::Controls::SplitButton _newTabButton{ nullptr };
         Windows::UI::Xaml::Controls::MenuFlyout _workspaceFlyout{ nullptr };
         Windows::UI::Xaml::Controls::Button _workspaceDropdown{ nullptr };

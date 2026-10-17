@@ -584,7 +584,14 @@ void IslandWindow::_OnGetMinMaxInfo(const WPARAM /*wParam*/, const LPARAM lParam
     }
     case WM_MOVE:
     {
+        DesktopWallpaperChanged.raise(false, 0, 0);
         WindowMoved.raise();
+        break;
+    }
+    case WM_DISPLAYCHANGE:
+    case WM_SETTINGCHANGE:
+    {
+        DesktopWallpaperChanged.raise(true, 0, 0);
         break;
     }
     case WM_CLOSE:
@@ -641,6 +648,24 @@ void IslandWindow::_OnGetMinMaxInfo(const WPARAM /*wParam*/, const LPARAM lParam
         return 0;
     case WM_WINDOWPOSCHANGING:
     {
+        const auto position = reinterpret_cast<const WINDOWPOS*>(lparam);
+        const auto updateWallpaper = wil::scope_exit([&] {
+            if (WI_IsFlagClear(position->flags, SWP_NOMOVE))
+            {
+                RECT bounds{};
+                if (::GetWindowRect(_window.get(), &bounds))
+                {
+                    // Include any quake-mode adjustment made below.
+                    DesktopWallpaperChanged.raise(false,
+                                                  static_cast<double>(position->x) - bounds.left,
+                                                  static_cast<double>(position->y) - bounds.top);
+                }
+                else
+                {
+                    LOG_LAST_ERROR();
+                }
+            }
+        });
         // GH#10274 - if the quake window gets moved to another monitor via aero
         // snap (win+shift+arrows), then re-adjust the size for the new monitor.
         if (IsQuakeWindow())

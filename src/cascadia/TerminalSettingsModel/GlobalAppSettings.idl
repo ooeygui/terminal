@@ -120,6 +120,11 @@ namespace Microsoft.Terminal.Settings.Model
         INHERITABLE_SETTING(Microsoft.Terminal.Control.TextMeasurement, TextMeasurement);
         INHERITABLE_SETTING(Microsoft.Terminal.Control.AmbiguousWidth, AmbiguousWidth);
         INHERITABLE_SETTING(Boolean, UseBackgroundImageForWindow);
+        INHERITABLE_SETTING(Boolean, BackgroundImageRelativeToDesktop);
+        INHERITABLE_SETTING(Single, DesktopWallpaperBlur);
+        INHERITABLE_SETTING(Single, DesktopWallpaperSaturation);
+        INHERITABLE_SETTING(Windows.UI.Color, DesktopWallpaperTint);
+        INHERITABLE_SETTING(Single, DesktopWallpaperTintOpacity);
         INHERITABLE_SETTING(Boolean, AlwaysOnTop);
         INHERITABLE_SETTING(Boolean, AutoHideWindow);
         INHERITABLE_SETTING(TabSwitcherMode, TabSwitcherMode);

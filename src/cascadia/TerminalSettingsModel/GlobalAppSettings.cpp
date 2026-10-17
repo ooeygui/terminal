@@ -203,6 +203,18 @@ void GlobalAppSettings::LayerJson(const Json::Value& json, const OriginTag origi
     {
         this->InitialRows(std::clamp(this->InitialRows(), MINIMUM_VISIBLE_CELLS, 999));
     }
+    if (HasDesktopWallpaperBlur())
+    {
+        DesktopWallpaperBlur(std::clamp(DesktopWallpaperBlur(), 0.0f, 250.0f));
+    }
+    if (HasDesktopWallpaperSaturation())
+    {
+        DesktopWallpaperSaturation(std::clamp(DesktopWallpaperSaturation(), 0.0f, 1.0f));
+    }
+    if (HasDesktopWallpaperTintOpacity())
+    {
+        DesktopWallpaperTintOpacity(std::clamp(DesktopWallpaperTintOpacity(), 0.0f, 1.0f));
+    }
     LayerActionsFrom(json, origin, true);
 
     // No need to update _fixupsAppliedDuringLoad here.

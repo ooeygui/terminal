@@ -2590,6 +2590,37 @@
           "description": "When set to true, the background image for the currently focused profile is expanded to encompass the entire window, beneath other panes.",
           "type": "boolean"
         },
+        "experimental.backgroundImageRelativeToDesktop": {
+          "default": false,
+          "description": "When experimental.useBackgroundImageForWindow is enabled and the focused profile's backgroundImage is desktopWallpaper, match each monitor's desktop wallpaper at its screen position. Uses the Windows wallpaper layout and background color instead of the profile's image stretch and alignment settings. Cached DirectComposition surfaces are repositioned directly from native window-movement notifications without waiting for XAML rendering.",
+          "type": "boolean"
+        },
+        "experimental.desktopWallpaperBlur": {
+          "default": 0,
+          "description": "Gaussian blur standard deviation in physical desktop pixels (0 disables blur). Only applies to desktop-relative backgrounds. Each monitor is blurred independently with clamped edges; the cached result is reused while moving the window.",
+          "minimum": 0,
+          "maximum": 250,
+          "type": "number"
+        },
+        "experimental.desktopWallpaperSaturation": {
+          "default": 1,
+          "description": "Color saturation for desktop-relative backgrounds: 0 is grayscale and 1 preserves the wallpaper's original colors. Applied before blur and tint.",
+          "minimum": 0,
+          "maximum": 1,
+          "type": "number"
+        },
+        "experimental.desktopWallpaperTint": {
+          "$ref": "#/$defs/Color",
+          "default": "#000000",
+          "description": "Color blended over the desktop-relative wallpaper after saturation and blur. Set experimental.desktopWallpaperTintOpacity to control its strength."
+        },
+        "experimental.desktopWallpaperTintOpacity": {
+          "default": 0,
+          "description": "Strength of the desktop-relative wallpaper tint: 0 disables tint and 1 replaces the wallpaper with the tint color. Does not change terminal/window transparency.",
+          "minimum": 0,
+          "maximum": 1,
+          "type": "number"
+        },
         "initialCols": {
           "default": 120,
           "description": "The number of columns displayed in the window upon first load. If \"launchMode\" is set to \"maximized\" (or \"maximizedFocus\"), this property is ignored.",

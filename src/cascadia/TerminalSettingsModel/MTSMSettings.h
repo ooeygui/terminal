@@ -45,6 +45,11 @@ Author(s):
     X(winrt::Microsoft::Terminal::Control::AmbiguousWidth, AmbiguousWidth, "compatibility.ambiguousWidth", winrt::Microsoft::Terminal::Control::AmbiguousWidth::Narrow)                               \
     X(winrt::Microsoft::Terminal::Control::DefaultInputScope, DefaultInputScope, "defaultInputScope")                                                                                                 \
     X(bool, UseBackgroundImageForWindow, "experimental.useBackgroundImageForWindow", false)                                                                                                           \
+    X(bool, BackgroundImageRelativeToDesktop, "experimental.backgroundImageRelativeToDesktop", false)                                                                                               \
+    X(float, DesktopWallpaperBlur, "experimental.desktopWallpaperBlur", 0.0f)                                                                                                                        \
+    X(float, DesktopWallpaperSaturation, "experimental.desktopWallpaperSaturation", 1.0f)                                                                                                            \
+    X(winrt::Windows::UI::Color, DesktopWallpaperTint, "experimental.desktopWallpaperTint", (winrt::Windows::UI::Color{ 255, 0, 0, 0 }))                                                               \
+    X(float, DesktopWallpaperTintOpacity, "experimental.desktopWallpaperTintOpacity", 0.0f)                                                                                                          \
     X(bool, TrimBlockSelection, "trimBlockSelection", true)                                                                                                                                           \
     X(bool, DetectURLs, "experimental.detectURLs", true)                                                                                                                                              \
     X(bool, AlwaysShowTabs, "alwaysShowTabs", true)                                                                                                                                                   \
