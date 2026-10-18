@@ -2895,6 +2895,82 @@ This action is applied immediately and cannot be undone.</value>
     <value>Tabs and title bar</value>
     <comment>Title of a section that groups settings related to tabs and pane layout.</comment>
   </data>
+  <data name="Globals_Section_BackgroundImages.Text" xml:space="preserve">
+    <value>Background images</value>
+    <comment>Title of a section containing whole-window background image and desktop wallpaper settings.</comment>
+  </data>
+  <data name="Globals_UseBackgroundImageForWindow.Header" xml:space="preserve">
+    <value>Use one background image for the whole window</value>
+    <comment>Header for a switch that extends the active profile's background image across all panes.</comment>
+  </data>
+  <data name="Globals_UseBackgroundImageForWindow.Description" xml:space="preserve">
+    <value>Extend the active profile's background image across all panes instead of drawing a separate image in each pane. This does not change profile background image selections.</value>
+    <comment>Description of the whole-window background image setting.</comment>
+  </data>
+  <data name="Globals_BackgroundImageRelativeToDesktop.Header" xml:space="preserve">
+    <value>Match desktop background</value>
+    <comment>Header for a switch enabling desktop-relative wallpaper, also known as pseudo-transparency.</comment>
+  </data>
+  <data name="Globals_BackgroundImageRelativeToDesktop.Description" xml:space="preserve">
+    <value>Keep wallpaper aligned with each monitor as the window moves, without showing windows behind Terminal (pseudo-transparency). Select "Use desktop wallpaper" in the profile's Appearance settings, or under Defaults to apply it to all profiles without their own background image.</value>
+    <comment>Description of desktop-relative wallpaper and its profile background image prerequisite. "Use desktop wallpaper", "Appearance", and "Defaults" refer to existing Settings UI labels.</comment>
+  </data>
+  <data name="Globals_DesktopWallpaperBlur.Header" xml:space="preserve">
+    <value>Wallpaper blur</value>
+    <comment>Header for a slider adjusting Gaussian blur of desktop-relative wallpaper.</comment>
+  </data>
+  <data name="Globals_DesktopWallpaperBlur.Description" xml:space="preserve">
+    <value>Blur the desktop wallpaper by 0 to 250 physical pixels. Set to 0 for a sharp image.</value>
+    <comment>Description of the wallpaper blur slider, including units and range.</comment>
+  </data>
+  <data name="Globals_DesktopWallpaperBlurSlider.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Wallpaper blur in physical pixels</value>
+    <comment>Accessible name of the wallpaper blur slider.</comment>
+  </data>
+  <data name="Globals_DesktopWallpaperSaturation.Header" xml:space="preserve">
+    <value>Wallpaper saturation</value>
+    <comment>Header for a slider adjusting the color saturation of desktop-relative wallpaper.</comment>
+  </data>
+  <data name="Globals_DesktopWallpaperSaturation.Description" xml:space="preserve">
+    <value>Set to 0% for grayscale or 100% for the original colors.</value>
+    <comment>Description of the wallpaper saturation slider.</comment>
+  </data>
+  <data name="Globals_DesktopWallpaperSaturationSlider.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Wallpaper saturation percentage</value>
+    <comment>Accessible name of the wallpaper saturation slider.</comment>
+  </data>
+  <data name="Globals_DesktopWallpaperTint.Header" xml:space="preserve">
+    <value>Wallpaper tint color</value>
+    <comment>Header for a color picker that chooses a tint applied to desktop-relative wallpaper.</comment>
+  </data>
+  <data name="Globals_DesktopWallpaperTint.Description" xml:space="preserve">
+    <value>Choose a color to blend over the wallpaper. Increase tint strength below to make the color visible.</value>
+    <comment>Description of the wallpaper tint color setting.</comment>
+  </data>
+  <data name="Globals_DesktopWallpaperTintButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Choose wallpaper tint color</value>
+    <comment>Accessible name of the button opening the wallpaper tint color picker.</comment>
+  </data>
+  <data name="Globals_DesktopWallpaperTintButton.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Choose wallpaper tint color</value>
+    <comment>Tooltip for the button opening the wallpaper tint color picker.</comment>
+  </data>
+  <data name="Globals_DesktopWallpaperTintPicker.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Wallpaper tint color</value>
+    <comment>Accessible name of the wallpaper tint color picker.</comment>
+  </data>
+  <data name="Globals_DesktopWallpaperTintOpacity.Header" xml:space="preserve">
+    <value>Wallpaper tint strength</value>
+    <comment>Header for a slider controlling how much of the tint color is blended over the wallpaper.</comment>
+  </data>
+  <data name="Globals_DesktopWallpaperTintOpacity.Description" xml:space="preserve">
+    <value>Set to 0% for no tint or 100% to replace the wallpaper with the tint color.</value>
+    <comment>Description of the wallpaper tint opacity slider.</comment>
+  </data>
+  <data name="Globals_DesktopWallpaperTintOpacitySlider.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Wallpaper tint strength percentage</value>
+    <comment>Accessible name of the wallpaper tint strength slider.</comment>
+  </data>
   <data name="Globals_Section_WindowBehavior.Text" xml:space="preserve">
     <value>Window behavior</value>
     <comment>Title of a section that groups settings related to terminal window behavior.</comment>

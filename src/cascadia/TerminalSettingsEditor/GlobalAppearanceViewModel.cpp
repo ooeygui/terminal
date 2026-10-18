@@ -112,6 +112,16 @@ namespace winrt::Microsoft::Terminal::Settings::Editor::implementation
         _WindowSettings.DisableAnimations(!value);
     }
 
+    void GlobalAppearanceViewModel::SetDesktopWallpaperSaturationFromPercentageValue(double value)
+    {
+        DesktopWallpaperSaturation(static_cast<float>(value / 100.0));
+    }
+
+    void GlobalAppearanceViewModel::SetDesktopWallpaperTintOpacityFromPercentageValue(double value)
+    {
+        DesktopWallpaperTintOpacity(static_cast<float>(value / 100.0));
+    }
+
     void GlobalAppearanceViewModel::ShowTitlebarToggled(const winrt::Windows::Foundation::IInspectable& /* sender */, const RoutedEventArgs& /* args */)
     {
         // Set AlwaysShowTabs to true if ShowTabsInTitlebar was toggled OFF -> ON

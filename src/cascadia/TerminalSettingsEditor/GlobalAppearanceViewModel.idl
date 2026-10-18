@@ -23,6 +23,9 @@ namespace Microsoft.Terminal.Settings.Editor
 
         Boolean InvertedDisableAnimations;
 
+        void SetDesktopWallpaperSaturationFromPercentageValue(Double value);
+        void SetDesktopWallpaperTintOpacityFromPercentageValue(Double value);
+
         void ShowTitlebarToggled(IInspectable sender, Windows.UI.Xaml.RoutedEventArgs args);
 
         PERMANENT_OBSERVABLE_PROJECTED_SETTING(Boolean, AlwaysShowTabs);
@@ -36,5 +39,11 @@ namespace Microsoft.Terminal.Settings.Editor
         PERMANENT_OBSERVABLE_PROJECTED_SETTING(Boolean, MinimizeToNotificationArea);
         PERMANENT_OBSERVABLE_PROJECTED_SETTING(Boolean, ShowAdminShield);
         PERMANENT_OBSERVABLE_PROJECTED_SETTING(Boolean, EnableUnfocusedAcrylic);
+        PERMANENT_OBSERVABLE_PROJECTED_SETTING(Boolean, UseBackgroundImageForWindow);
+        PERMANENT_OBSERVABLE_PROJECTED_SETTING(Boolean, BackgroundImageRelativeToDesktop);
+        PERMANENT_OBSERVABLE_PROJECTED_SETTING(Single, DesktopWallpaperBlur);
+        PERMANENT_OBSERVABLE_PROJECTED_SETTING(Single, DesktopWallpaperSaturation);
+        PERMANENT_OBSERVABLE_PROJECTED_SETTING(Windows.UI.Color, DesktopWallpaperTint);
+        PERMANENT_OBSERVABLE_PROJECTED_SETTING(Single, DesktopWallpaperTintOpacity);
     }
 }

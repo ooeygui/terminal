@@ -2587,12 +2587,12 @@
         },
         "experimental.useBackgroundImageForWindow": {
           "default": false,
-          "description": "When set to true, the background image for the currently focused profile is expanded to encompass the entire window, beneath other panes.",
+          "description": "When set to true, the background image for the currently focused profile is expanded to encompass the entire window, beneath other panes. Available in Settings under Appearance > Background images.",
           "type": "boolean"
         },
         "experimental.backgroundImageRelativeToDesktop": {
           "default": false,
-          "description": "When experimental.useBackgroundImageForWindow is enabled and the focused profile's backgroundImage is desktopWallpaper, match each monitor's desktop wallpaper at its screen position. Uses the Windows wallpaper layout and background color instead of the profile's image stretch and alignment settings. Cached DirectComposition surfaces are repositioned directly from native window-movement notifications without waiting for XAML rendering.",
+          "description": "When experimental.useBackgroundImageForWindow is enabled and the focused profile's backgroundImage is desktopWallpaper, match each monitor's desktop wallpaper at its screen position. Available as Match desktop background under Appearance > Background images in Settings. Uses the Windows wallpaper layout and background color instead of the profile's image stretch and alignment settings. Cached DirectComposition surfaces are repositioned directly from native window-movement notifications without waiting for XAML rendering.",
           "type": "boolean"
         },
         "experimental.desktopWallpaperBlur": {
