@@ -12,6 +12,11 @@
 #include <d3d11.h>
 #include <winrt/Windows.Graphics.Imaging.h>
 
+namespace TerminalAppUnitTests
+{
+    class DesktopWallpaperTests;
+}
+
 namespace TerminalApp::DesktopWallpaper
 {
     struct Monitor
@@ -45,6 +50,8 @@ namespace TerminalApp::DesktopWallpaper
         void Position(const RECT& bounds, double originX, double originY, float opacity);
 
     private:
+        friend class TerminalAppUnitTests::DesktopWallpaperTests;
+
         struct MonitorVisual
         {
             RECT bounds;

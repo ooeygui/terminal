@@ -4184,8 +4184,6 @@ namespace winrt::TerminalApp::implementation
                     {
                         page->_desktopWallpaperMonitors = std::move(monitors);
                         page->_desktopWallpaperMonitorsChanged = true;
-                        // Display changes can invalidate the device even if loading the image succeeds.
-                        page->_desktopWallpaperPresenter.reset();
                         if (page->_PositionDesktopWallpaper())
                         {
                             TraceLoggingWrite(

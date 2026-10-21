@@ -92,6 +92,7 @@ namespace TerminalAppUnitTests
         TEST_METHOD(NativeWallpaperPresentation);
         TEST_METHOD(WallpaperDeviceRecovery);
         TEST_METHOD(WallpaperWithDisconnectedMonitor);
+        TEST_METHOD(WallpaperUpdatesReusePresenter);
     };
 
     void DesktopWallpaperTests::WallpaperLayouts()
@@ -386,6 +387,56 @@ namespace TerminalAppUnitTests
         presenter->SetMonitors(changedMonitors);
         presenter->Position({ 0, 0, 64, 64 }, -32, 0, 1);
         VERIFY_IS_TRUE(presenter->IsDeviceValid());
+    }
+
+    void DesktopWallpaperTests::WallpaperUpdatesReusePresenter()
+    {
+        wil::unique_hwnd parent{ CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, L"STATIC", L"", WS_POPUP, 0, 0, 64, 64, nullptr, nullptr, GetModuleHandleW(nullptr), nullptr) };
+        VERIFY_IS_NOT_NULL(parent.get());
+        const MonitorSource sources[]{ { { 0, 0, 64, 64 }, L"" } };
+        const auto original = Render(sources, DWPOS_FILL, RGB(12, 34, 56));
+        Presenter presenter{ parent.get() };
+        presenter.SetMonitors(original);
+        presenter.Position({ 0, 0, 64, 64 }, 8, 16, 0.75f);
+
+        const auto graphicsDevice = presenter._graphicsDevice;
+        const auto device = presenter._device;
+        const auto target = presenter._target;
+        const auto root = presenter._root;
+        Effects effects;
+        effects.blur = 2;
+        effects.saturation = 0.5f;
+        effects.tintOpacity = 0.25f;
+        for (const auto opacity : { 0.5f, 1.0f, 0.75f })
+        {
+            const auto replacement = Render(sources, DWPOS_FILL, RGB(56, 34, 12), effects);
+            const auto previousVisual = presenter._monitors[0].visual;
+            presenter.SetMonitors(replacement);
+            VERIFY_IS_TRUE(presenter._visible);
+            VERIFY_IS_FALSE(presenter._positioned);
+            VERIFY_IS_TRUE(previousVisual.get() != presenter._monitors[0].visual.get());
+            presenter.Position({ 0, 0, 64, 64 }, 8, 16, opacity);
+            VERIFY_IS_TRUE(presenter._positioned);
+            VERIFY_IS_TRUE(presenter._visible);
+            VERIFY_IS_TRUE(graphicsDevice.get() == presenter._graphicsDevice.get());
+            VERIFY_IS_TRUE(device.get() == presenter._device.get());
+            VERIFY_IS_TRUE(target.get() == presenter._target.get());
+            VERIFY_IS_TRUE(root.get() == presenter._root.get());
+            VERIFY_ARE_EQUAL(opacity, presenter._currentOpacity);
+        }
+
+        const auto previousVisual = presenter._monitors[0].visual;
+        auto invalidReplacement = original;
+        winrt::Windows::Graphics::Imaging::SoftwareBitmap closedBitmap{
+            winrt::Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8, 64, 64 };
+        closedBitmap.Close();
+        invalidReplacement.push_back({ { 64, 0, 128, 64 }, closedBitmap });
+        VERIFY_THROWS(presenter.SetMonitors(invalidReplacement), wil::ResultException);
+        VERIFY_IS_TRUE(previousVisual.get() == presenter._monitors[0].visual.get());
+        VERIFY_IS_TRUE(presenter._visible);
+        VERIFY_IS_TRUE(presenter._positioned);
+        presenter.Position({ 0, 0, 64, 64 }, 9, 16, 0.75f);
+        VERIFY_IS_TRUE(presenter.IsDeviceValid());
     }
 
     void DesktopWallpaperTests::NativeWallpaperPresentation()

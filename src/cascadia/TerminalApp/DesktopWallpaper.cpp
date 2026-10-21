@@ -99,6 +99,8 @@ namespace TerminalApp::DesktopWallpaper
             THROW_IF_FAILED(visual->SetContent(surface.get()));
             visuals.push_back({ monitor.bounds, std::move(visual) });
         }
+        // Keep the committed wallpaper visible until every replacement surface is ready.
+        // Position submits the visual replacement and its offsets in one commit.
         THROW_IF_FAILED(_root->RemoveAllVisuals());
         for (const auto& monitor : visuals)
         {
