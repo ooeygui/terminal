@@ -131,6 +131,19 @@ void AppearanceConfig::LayerJson(const Json::Value& json)
 
     MTSM_APPEARANCE_SETTINGS(APPEARANCE_SETTINGS_LAYER_JSON)
 #undef APPEARANCE_SETTINGS_LAYER_JSON
+
+    if (HasDesktopWallpaperBlur())
+    {
+        DesktopWallpaperBlur(std::clamp(DesktopWallpaperBlur(), 0.0f, 100.0f));
+    }
+    if (HasDesktopWallpaperSaturation())
+    {
+        DesktopWallpaperSaturation(std::clamp(DesktopWallpaperSaturation(), 0.0f, 1.0f));
+    }
+    if (HasDesktopWallpaperTintOpacity())
+    {
+        DesktopWallpaperTintOpacity(std::clamp(DesktopWallpaperTintOpacity(), 0.0f, 1.0f));
+    }
 }
 
 winrt::Microsoft::Terminal::Settings::Model::Profile AppearanceConfig::SourceProfile()

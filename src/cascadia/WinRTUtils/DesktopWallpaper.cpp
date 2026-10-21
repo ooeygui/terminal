@@ -10,10 +10,12 @@
 #include <d2d1_1.h>
 #include <d2d1effects.h>
 #include <d3d11.h>
+#include <cmath>
+#include <map>
 #include <til/string.h>
 #include <winrt/Windows.Storage.Streams.h>
 
-namespace TerminalApp::DesktopWallpaper
+namespace Microsoft::Terminal::UI::DesktopWallpaper
 {
     namespace
     {
@@ -237,6 +239,41 @@ namespace TerminalApp::DesktopWallpaper
     {
         return useBackgroundImageForWindow && relativeToDesktop &&
                (imagePath.empty() || til::equals_insensitive_ascii(imagePath, L"desktopWallpaper"));
+    }
+
+    winrt::Windows::Graphics::Imaging::SoftwareBitmap CreatePreview(const std::span<const Monitor> monitors, const RECT& bounds)
+    {
+        const auto width = bounds.right - bounds.left;
+        const auto height = bounds.bottom - bounds.top;
+        THROW_HR_IF(E_INVALIDARG, width <= 0 || height <= 0);
+        const auto bytes = static_cast<uint64_t>(width) * height * 4;
+        THROW_HR_IF(E_BOUNDS, bytes > UINT32_MAX);
+        winrt::Windows::Storage::Streams::Buffer pixels{ static_cast<uint32_t>(bytes) };
+        pixels.Length(static_cast<uint32_t>(bytes));
+        memset(pixels.data(), 0, static_cast<size_t>(bytes));
+        for (const auto& monitor : monitors)
+        {
+            RECT intersection{};
+            if (!IntersectRect(&intersection, &bounds, &monitor.bounds))
+            {
+                continue;
+            }
+            const auto monitorWidth = monitor.bitmap.PixelWidth();
+            const auto monitorHeight = monitor.bitmap.PixelHeight();
+            THROW_HR_IF(E_INVALIDARG, monitorWidth != monitor.bounds.right - monitor.bounds.left || monitorHeight != monitor.bounds.bottom - monitor.bounds.top);
+            const auto monitorBytes = static_cast<uint64_t>(monitorWidth) * monitorHeight * 4;
+            THROW_HR_IF(E_BOUNDS, monitorBytes > UINT32_MAX);
+            winrt::Windows::Storage::Streams::Buffer source{ static_cast<uint32_t>(monitorBytes) };
+            monitor.bitmap.CopyToBuffer(source);
+            for (auto y = intersection.top; y < intersection.bottom; ++y)
+            {
+                const auto destinationOffset = (static_cast<size_t>(y - bounds.top) * width + intersection.left - bounds.left) * 4;
+                const auto sourceOffset = (static_cast<size_t>(y - monitor.bounds.top) * monitorWidth + intersection.left - monitor.bounds.left) * 4;
+                memcpy(pixels.data() + destinationOffset, source.data() + sourceOffset, static_cast<size_t>(intersection.right - intersection.left) * 4);
+            }
+        }
+        return winrt::Windows::Graphics::Imaging::SoftwareBitmap::CreateCopyFromBuffer(
+            pixels, winrt::Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8, width, height, winrt::Windows::Graphics::Imaging::BitmapAlphaMode::Premultiplied);
     }
 
     std::vector<Monitor> Load(const Effects& effects)

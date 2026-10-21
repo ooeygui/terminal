@@ -11,6 +11,7 @@
 #include "../WinRTUtils/inc/Utils.h"
 #include "../../renderer/base/FontCache.h"
 #include "../TerminalSettingsAppAdapterLib/TerminalSettings.h"
+#include <DesktopWallpaper.h>
 
 using namespace winrt::Windows::UI::Text;
 using namespace winrt::Windows::UI::Xaml;
@@ -30,7 +31,7 @@ namespace winrt::Microsoft::Terminal::Settings::Editor::implementation
 
     ProfileViewModel::ProfileViewModel(const Model::Profile& profile, const Model::CascadiaSettings& appSettings, const Model::WindowSettings& windowSettings, const Windows::UI::Core::CoreDispatcher& dispatcher) :
         _profile{ profile },
-        _defaultAppearanceViewModel{ winrt::make<implementation::AppearanceViewModel>(profile.DefaultAppearance().try_as<AppearanceConfig>()) },
+        _defaultAppearanceViewModel{ winrt::make<implementation::AppearanceViewModel>(profile.DefaultAppearance().try_as<AppearanceConfig>(), windowSettings) },
         _originalProfileGuid{ profile.Guid() },
         _appSettings{ appSettings },
         _windowSettings{ windowSettings },
@@ -152,7 +153,7 @@ namespace winrt::Microsoft::Terminal::Settings::Editor::implementation
 
         if (profile.HasUnfocusedAppearance())
         {
-            _unfocusedAppearanceViewModel = winrt::make<implementation::AppearanceViewModel>(profile.UnfocusedAppearance().try_as<AppearanceConfig>());
+            _unfocusedAppearanceViewModel = winrt::make<implementation::AppearanceViewModel>(profile.UnfocusedAppearance().try_as<AppearanceConfig>(), _windowSettings);
         }
 
         _parsedPadding = StringToXamlThickness(_profile.Padding());
@@ -220,12 +221,20 @@ namespace winrt::Microsoft::Terminal::Settings::Editor::implementation
         return FormatAccessibleName(USES_RESOURCE(L"Profile_Padding/Header"), Padding());
     }
 
-    Control::IControlSettings ProfileViewModel::TermSettings() const
+    bool ProfileViewModel::UseDesktopWallpaperForPreview() const
+    {
+        return ::Microsoft::Terminal::UI::DesktopWallpaper::ShouldUseDesktopRelativeWallpaper(
+            _windowSettings.UseBackgroundImageForWindow(),
+            _defaultAppearanceViewModel.BackgroundImageRelativeToDesktop(),
+            _profile.DefaultAppearance().BackgroundImagePath().Path());
+    }
+
+    Control::IControlSettings ProfileViewModel::TermSettings(const bool desktopWallpaperPreview) const
     {
         // This may look pricey, but it only resolves resources that have not been visited
         // and the preview update is debounced.
         _appSettings.ResolveMediaResources();
-        return *Settings::TerminalSettings::CreateForPreview(_appSettings, _windowSettings, _profile);
+        return *Settings::TerminalSettings::CreateForPreview(_appSettings, _windowSettings, _profile, desktopWallpaperPreview);
     }
 
     Control::IControlSettings ProfileViewModel::TermSettingsUnfocused() const
@@ -574,7 +583,7 @@ namespace winrt::Microsoft::Terminal::Settings::Editor::implementation
 
         _profile.CreateUnfocusedAppearance();
 
-        _unfocusedAppearanceViewModel = winrt::make<implementation::AppearanceViewModel>(_profile.UnfocusedAppearance().try_as<AppearanceConfig>());
+        _unfocusedAppearanceViewModel = winrt::make<implementation::AppearanceViewModel>(_profile.UnfocusedAppearance().try_as<AppearanceConfig>(), _windowSettings);
         _unfocusedAppearanceViewModel.SchemesList(DefaultAppearance().SchemesList());
 
         _NotifyChanges(L"UnfocusedAppearance", L"HasUnfocusedAppearance", L"ShowUnfocusedAppearance", L"UnfocusedAppearanceCardValue");

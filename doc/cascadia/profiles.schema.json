@@ -2592,7 +2592,7 @@
         },
         "experimental.backgroundImageRelativeToDesktop": {
           "default": false,
-          "description": "When experimental.useBackgroundImageForWindow is enabled, match each monitor's desktop wallpaper at its screen position if the focused profile's effective backgroundImage is unset, empty, or desktopWallpaper. An explicit custom background image, including one inherited from profiles.defaults, takes precedence. Available as Match desktop background under Personalization > Background images in Settings. Uses the Windows wallpaper layout and background color instead of the profile's image stretch and alignment settings. Cached DirectComposition surfaces are repositioned directly from native window-movement notifications without waiting for XAML rendering. Settings and display changes retain a healthy presenter and the visible wallpaper until replacement surfaces are ready to commit. Invalid graphics resources are recreated, with bounded retries for transient reload failures. Cached wallpaper is retained for graphics-device recovery.",
+          "description": "When experimental.useBackgroundImageForWindow is enabled, match each monitor's desktop wallpaper at its screen position if the focused profile's effective backgroundImage is unset, empty, or desktopWallpaper. An explicit custom background image, including one inherited from profiles.defaults, takes precedence. Available as Match desktop background under Personalization > Background images in Settings. Profiles inherit matching and effect settings from here unless overridden in profiles.defaults or the profile's Appearance page. The focused pane's profile controls the whole-window wallpaper. Uses the Windows wallpaper layout and background color instead of the profile's image stretch and alignment settings. Cached DirectComposition surfaces are repositioned directly from native window-movement notifications without waiting for XAML rendering. Settings and display changes retain a healthy presenter and the visible wallpaper until replacement surfaces are ready to commit. Invalid graphics resources are recreated, with bounded retries for transient reload failures. Cached wallpaper is retained for graphics-device recovery.",
           "type": "boolean"
         },
         "experimental.desktopWallpaperBlur": {
@@ -2983,6 +2983,35 @@
           "maximum": 1.0,
           "minimum": 0.0,
           "type": "number"
+        },
+        "experimental.backgroundImageRelativeToDesktop": {
+          "description": "Override Match desktop background for this profile. Inherits from profiles.defaults, then the global setting when omitted or null. Requires the global experimental.useBackgroundImageForWindow setting. The focused pane's profile controls the whole-window background; these settings do not vary with window focus. Custom background images take precedence.",
+          "type": ["boolean", "null"]
+        },
+        "experimental.desktopWallpaperBlur": {
+          "description": "Override desktop wallpaper blur for this profile, in physical pixels. Inherits from profiles.defaults, then the global value when omitted or null. Available under the profile's Appearance > Match desktop background.",
+          "minimum": 0,
+          "maximum": 100,
+          "type": ["number", "null"]
+        },
+        "experimental.desktopWallpaperSaturation": {
+          "description": "Override desktop wallpaper saturation for this profile: 0 is grayscale, 1 preserves colors. Inherits from profiles.defaults, then the global value when omitted or null.",
+          "minimum": 0,
+          "maximum": 1,
+          "type": ["number", "null"]
+        },
+        "experimental.desktopWallpaperTint": {
+          "description": "Override the desktop wallpaper tint color for this profile. Inherits from profiles.defaults, then the global value when omitted or null.",
+          "oneOf": [
+            { "$ref": "#/$defs/Color" },
+            { "type": "null" }
+          ]
+        },
+        "experimental.desktopWallpaperTintOpacity": {
+          "description": "Override desktop wallpaper tint strength for this profile: 0 disables tint, 1 replaces the wallpaper with the tint color. Inherits from profiles.defaults, then the global value when omitted or null.",
+          "minimum": 0,
+          "maximum": 1,
+          "type": ["number", "null"]
         },
         "backgroundImageStretchMode": {
           "default": "uniformToFill",

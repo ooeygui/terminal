@@ -72,7 +72,14 @@
                         HorizontalAlignment="Left"
                         BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
                         BorderThickness="1"
-                        CornerRadius="{StaticResource ControlCornerRadius}" />
+                        CornerRadius="{StaticResource ControlCornerRadius}">
+                    <Grid x:Name="PreviewContent">
+                        <Image x:Name="DesktopWallpaperPreview"
+                               AutomationProperties.AccessibilityView="Raw"
+                               AutomationProperties.AutomationId="ProfileDesktopWallpaperPreview"
+                               Stretch="Fill" />
+                    </Grid>
+                </Border>
             </Border>
 
             <local:Appearances x:Name="DefaultAppearanceView"

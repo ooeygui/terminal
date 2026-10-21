@@ -280,13 +280,13 @@ namespace winrt::TerminalApp::implementation
         Microsoft::UI::Xaml::Controls::TabView _tabView{ nullptr };
         TerminalApp::TabRowControl _tabRow{ nullptr };
         Windows::UI::Xaml::Controls::Grid _tabContent{ nullptr };
-        std::unique_ptr<::TerminalApp::DesktopWallpaper::Presenter> _desktopWallpaperPresenter;
-        std::vector<::TerminalApp::DesktopWallpaper::Monitor> _desktopWallpaperMonitors;
+        std::unique_ptr<::Microsoft::Terminal::UI::DesktopWallpaper::Presenter> _desktopWallpaperPresenter;
+        std::vector<::Microsoft::Terminal::UI::DesktopWallpaper::Monitor> _desktopWallpaperMonitors;
         HWND _desktopWallpaperHwnd{ nullptr };
         bool _desktopWallpaperEnabled{ false };
         bool _desktopWallpaperMonitorsChanged{ false };
         uint64_t _desktopWallpaperGeneration{ 0 };
-        ::TerminalApp::DesktopWallpaper::Effects _desktopWallpaperEffects;
+        ::Microsoft::Terminal::UI::DesktopWallpaper::Effects _desktopWallpaperEffects;
         Windows::UI::Xaml::FrameworkElement::LayoutUpdated_revoker _desktopWallpaperLayoutRevoker;
         winrt::fire_and_forget _ReloadDesktopWallpaper();
         bool _PositionDesktopWallpaper(double offsetX = 0, double offsetY = 0);

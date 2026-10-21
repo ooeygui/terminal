@@ -77,7 +77,7 @@ namespace winrt::Microsoft::Terminal::Settings::Editor::implementation
             std::array<std::vector<Windows::UI::Xaml::Controls::MenuFlyoutItemBase>, 2> fontSettingsUnused;
         };
 
-        AppearanceViewModel(const Model::AppearanceConfig& appearance);
+        AppearanceViewModel(const Model::AppearanceConfig& appearance, const Model::WindowSettings& windowSettings);
 
         // IInheritableViewModel
         bool HasSetting(const hstring& name);
@@ -130,6 +130,8 @@ namespace winrt::Microsoft::Terminal::Settings::Editor::implementation
         bool BackgroundImageSettingsEnabled() const;
         void SetBackgroundImageOpacityFromPercentageValue(double percentageValue);
         void SetBackgroundImagePath(winrt::hstring path);
+        void SetDesktopWallpaperSaturationFromPercentageValue(double value);
+        void SetDesktopWallpaperTintOpacityFromPercentageValue(double value);
         hstring BackgroundImageAlignmentCurrentValue() const;
 
         void ClearColorScheme();
@@ -177,6 +179,11 @@ namespace winrt::Microsoft::Terminal::Settings::Editor::implementation
     PROJECTED(_appearance, LightColorSchemeName)                           \
     PROJECTED(_appearance, BackgroundImagePath)                            \
     PROJECTED(_appearance, BackgroundImageOpacity)                         \
+    CUSTOM(BackgroundImageRelativeToDesktop)                               \
+    CUSTOM(DesktopWallpaperBlur)                                           \
+    CUSTOM(DesktopWallpaperSaturation)                                     \
+    CUSTOM(DesktopWallpaperTint)                                           \
+    CUSTOM(DesktopWallpaperTintOpacity)                                    \
     PROJECTED(_appearance, BackgroundImageStretchMode)                     \
     PROJECTED(_appearance, BackgroundImageAlignment)                       \
     PROJECTED(_appearance, IntenseTextStyle)                               \
@@ -191,6 +198,36 @@ namespace winrt::Microsoft::Terminal::Settings::Editor::implementation
         APPEARANCE_INHERITABLE_SETTINGS(APPEARANCE_GEN_PROJECTED, APPEARANCE_GEN_CUSTOM)
 #undef APPEARANCE_GEN_PROJECTED
 #undef APPEARANCE_GEN_CUSTOM
+
+#define WALLPAPER_OVERRIDE(name)                                                                                  \
+        auto name() const                                                                                        \
+        {                                                                                                        \
+            return (_appearance.Has##name() || _appearance.name##OverrideSource()) ? _appearance.name() : _windowSettings.name(); \
+        }                                                                                                        \
+        template<typename T> void name(const T& value)                                                            \
+        {                                                                                                        \
+            if (!_appearance.Has##name() || _appearance.name() != value)                                          \
+            {                                                                                                    \
+                _appearance.name(value);                                                                         \
+                _NotifyChanges(L"Has" #name, L## #name);                                                          \
+            }                                                                                                    \
+        }                                                                                                        \
+        bool Has##name() const { return _appearance.Has##name(); }                                                \
+        void Clear##name()                                                                                       \
+        {                                                                                                        \
+            if (_appearance.Has##name())                                                                         \
+            {                                                                                                    \
+                _appearance.Clear##name();                                                                       \
+                _NotifyChanges(L"Has" #name, L## #name);                                                          \
+            }                                                                                                    \
+        }                                                                                                        \
+        auto name##OverrideSource() const { return _appearance.name##OverrideSource(); }
+        WALLPAPER_OVERRIDE(BackgroundImageRelativeToDesktop)
+        WALLPAPER_OVERRIDE(DesktopWallpaperBlur)
+        WALLPAPER_OVERRIDE(DesktopWallpaperSaturation)
+        WALLPAPER_OVERRIDE(DesktopWallpaperTint)
+        WALLPAPER_OVERRIDE(DesktopWallpaperTintOpacity)
+#undef WALLPAPER_OVERRIDE
 
         WINRT_OBSERVABLE_PROPERTY(Windows::Foundation::Collections::IObservableVector<Editor::ColorSchemeViewModel>, SchemesList, _propertyChangedHandlers, nullptr);
 
@@ -209,6 +246,7 @@ namespace winrt::Microsoft::Terminal::Settings::Editor::implementation
         double _parseCellSizeValue(const hstring& val) const;
 
         Model::AppearanceConfig _appearance;
+        Model::WindowSettings _windowSettings;
         winrt::hstring _lastBgImagePath;
         std::optional<FontFaceDependentsData> _fontFaceDependents;
     };

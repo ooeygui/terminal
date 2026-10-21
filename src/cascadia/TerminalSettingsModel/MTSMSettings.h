@@ -148,6 +148,11 @@ Author(s):
     X(winrt::hstring, CellHeight, "cellHeight")
 
 #define MTSM_APPEARANCE_SETTINGS(X)                                                                                                                                \
+    X(bool, BackgroundImageRelativeToDesktop, "experimental.backgroundImageRelativeToDesktop", false)                                                           \
+    X(float, DesktopWallpaperBlur, "experimental.desktopWallpaperBlur", 0.0f)                                                                                    \
+    X(float, DesktopWallpaperSaturation, "experimental.desktopWallpaperSaturation", 1.0f)                                                                        \
+    X(winrt::Windows::UI::Color, DesktopWallpaperTint, "experimental.desktopWallpaperTint", (winrt::Windows::UI::Color{ 255, 0, 0, 0 }))                             \
+    X(float, DesktopWallpaperTintOpacity, "experimental.desktopWallpaperTintOpacity", 0.0f)                                                                      \
     X(Core::CursorStyle, CursorShape, "cursorShape", Core::CursorStyle::Bar)                                                                                       \
     X(uint32_t, CursorHeight, "cursorHeight", DEFAULT_CURSOR_HEIGHT)                                                                                               \
     X(float, BackgroundImageOpacity, "backgroundImageOpacity", 1.0f)                                                                                               \

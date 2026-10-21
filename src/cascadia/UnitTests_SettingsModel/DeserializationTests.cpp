@@ -30,6 +30,7 @@ namespace SettingsModelUnitTests
         TEST_METHOD(LayerGlobalProperties);
         TEST_METHOD(DesktopRelativeWallpaperSetting);
         TEST_METHOD(DesktopWallpaperProfileBackgrounds);
+        TEST_METHOD(DesktopWallpaperProfileOverrides);
         TEST_METHOD(ValidateProfileOrdering);
         TEST_METHOD(ValidateHideProfiles);
         TEST_METHOD(TestReorderWithNullGuids);
@@ -482,6 +483,79 @@ namespace SettingsModelUnitTests
         VERIFY_ARE_EQUAL(L"C:\\inherited.png", inherited.GetAt(0).DefaultAppearance().BackgroundImagePath().Path());
         VERIFY_IS_TRUE(inherited.GetAt(1).DefaultAppearance().BackgroundImagePath().Path().empty());
         VERIFY_ARE_EQUAL(L"C:\\custom.png", inherited.GetAt(2).DefaultAppearance().BackgroundImagePath().Path());
+    }
+
+    void DeserializationTests::DesktopWallpaperProfileOverrides()
+    {
+        const auto settings = createSettings(R"({
+            "experimental.backgroundImageRelativeToDesktop":true,
+            "experimental.desktopWallpaperBlur":12,
+            "profiles":{
+                "defaults":{
+                    "experimental.desktopWallpaperSaturation":0.6,
+                    "experimental.desktopWallpaperTint":"#123456"
+                },
+                "list":[
+                    {"name":"inherit"},
+                    {"name":"override",
+                     "experimental.backgroundImageRelativeToDesktop":false,
+                     "experimental.desktopWallpaperBlur":0,
+                     "experimental.desktopWallpaperSaturation":0,
+                     "experimental.desktopWallpaperTint":"#654321",
+                     "experimental.desktopWallpaperTintOpacity":0.4}
+                ]
+            }
+        })");
+        const auto inherited = settings->ActiveProfiles().GetAt(0).DefaultAppearance();
+        const auto overridden = settings->ActiveProfiles().GetAt(1).DefaultAppearance();
+        VERIFY_IS_FALSE(inherited.HasBackgroundImageRelativeToDesktop());
+        VERIFY_IS_NULL(inherited.BackgroundImageRelativeToDesktopOverrideSource());
+        VERIFY_IS_FALSE(inherited.HasDesktopWallpaperBlur());
+        VERIFY_IS_NULL(inherited.DesktopWallpaperBlurOverrideSource());
+        VERIFY_ARE_EQUAL(12.0f, settings->WindowSettingsDefaults().DesktopWallpaperBlur());
+        VERIFY_IS_FALSE(inherited.HasDesktopWallpaperSaturation());
+        VERIFY_IS_NOT_NULL(inherited.DesktopWallpaperSaturationOverrideSource());
+        VERIFY_ARE_EQUAL(0.6f, inherited.DesktopWallpaperSaturation());
+        VERIFY_ARE_EQUAL(uint8_t{ 0x12 }, inherited.DesktopWallpaperTint().R);
+        VERIFY_IS_TRUE(overridden.HasBackgroundImageRelativeToDesktop());
+        VERIFY_IS_FALSE(overridden.BackgroundImageRelativeToDesktop());
+        VERIFY_IS_TRUE(overridden.HasDesktopWallpaperBlur());
+        VERIFY_ARE_EQUAL(0.0f, overridden.DesktopWallpaperBlur());
+        VERIFY_ARE_EQUAL(0.0f, overridden.DesktopWallpaperSaturation());
+        VERIFY_ARE_EQUAL(uint8_t{ 0x65 }, overridden.DesktopWallpaperTint().R);
+        VERIFY_ARE_EQUAL(0.4f, overridden.DesktopWallpaperTintOpacity());
+
+        const auto copy = settings->Copy();
+        VERIFY_IS_FALSE(copy.ActiveProfiles().GetAt(1).DefaultAppearance().BackgroundImageRelativeToDesktop());
+        VERIFY_ARE_EQUAL(0.4f, copy.ActiveProfiles().GetAt(1).DefaultAppearance().DesktopWallpaperTintOpacity());
+        const auto json = settings->ToJson();
+        const auto roundTrip = createSettings(json.toStyledString());
+        VERIFY_ARE_EQUAL(0.6f, roundTrip->ActiveProfiles().GetAt(0).DefaultAppearance().DesktopWallpaperSaturation());
+        VERIFY_ARE_EQUAL(0.0f, roundTrip->ActiveProfiles().GetAt(1).DefaultAppearance().DesktopWallpaperSaturation());
+
+        overridden.ClearBackgroundImageRelativeToDesktop();
+        overridden.ClearDesktopWallpaperBlur();
+        overridden.ClearDesktopWallpaperSaturation();
+        overridden.ClearDesktopWallpaperTint();
+        overridden.ClearDesktopWallpaperTintOpacity();
+        VERIFY_IS_FALSE(overridden.HasBackgroundImageRelativeToDesktop());
+        VERIFY_IS_NULL(overridden.BackgroundImageRelativeToDesktopOverrideSource());
+        VERIFY_ARE_EQUAL(0.6f, overridden.DesktopWallpaperSaturation());
+        VERIFY_ARE_EQUAL(uint8_t{ 0x12 }, overridden.DesktopWallpaperTint().R);
+        const auto cleared = settings->ToJson();
+        VERIFY_IS_FALSE(cleared["profiles"]["list"][1].isMember("experimental.desktopWallpaperBlur"));
+
+        for (const auto& [input, expected] : { std::pair{ -1.0f, 0.0f }, std::pair{ 100.0f, 100.0f }, std::pair{ 100.5f, 100.0f } })
+        {
+            auto boundary = json;
+            boundary["profiles"]["list"][1]["experimental.desktopWallpaperBlur"] = input;
+            boundary["profiles"]["list"][1]["experimental.desktopWallpaperSaturation"] = -1;
+            boundary["profiles"]["list"][1]["experimental.desktopWallpaperTintOpacity"] = 2;
+            const auto parsed = createSettings(boundary.toStyledString())->ActiveProfiles().GetAt(1).DefaultAppearance();
+            VERIFY_ARE_EQUAL(expected, parsed.DesktopWallpaperBlur());
+            VERIFY_ARE_EQUAL(0.0f, parsed.DesktopWallpaperSaturation());
+            VERIFY_ARE_EQUAL(1.0f, parsed.DesktopWallpaperTintOpacity());
+        }
     }
 
     void DeserializationTests::ValidateProfileOrdering()

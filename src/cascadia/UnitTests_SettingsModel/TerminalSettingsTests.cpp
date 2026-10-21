@@ -54,7 +54,27 @@ namespace SettingsModelUnitTests
         TEST_METHOD(TestLayerProfileOnColorScheme);
         TEST_METHOD(TestCommandlineToTitlePromotion);
         TEST_METHOD(TestInitialPositionParsing);
+        TEST_METHOD(DesktopWallpaperPreviewSettings);
     };
+
+    void TerminalSettingsTests::DesktopWallpaperPreviewSettings()
+    {
+        const auto appSettings = winrt::make_self<implementation::CascadiaSettings>(R"({
+            "experimental.useBackgroundImageForWindow":true,
+            "experimental.backgroundImageRelativeToDesktop":true,
+            "profiles":[{"name":"preview","backgroundImageOpacity":0.65}]
+        })");
+        const auto windowSettings = appSettings->WindowSettingsDefaults();
+        const auto profile = appSettings->ActiveProfiles().GetAt(0);
+        const auto normal = TerminalSettings::CreateForPreview(*appSettings, windowSettings, profile);
+        VERIFY_IS_FALSE(normal->UseBackgroundImageForWindow());
+        const auto wallpaper = TerminalSettings::CreateForPreview(*appSettings, windowSettings, profile, true);
+        VERIFY_IS_TRUE(wallpaper->UseBackgroundImageForWindow());
+        VERIFY_ARE_EQUAL(normal->DefaultBackground(), wallpaper->DefaultBackground());
+        VERIFY_ARE_EQUAL(normal->BackgroundImageOpacity(), wallpaper->BackgroundImageOpacity());
+        VERIFY_ARE_EQUAL(0.65f, wallpaper->BackgroundImageOpacity());
+        VERIFY_IS_FALSE(TerminalSettings::CreateForPreviewUnfocused(*appSettings, windowSettings, profile)->UseBackgroundImageForWindow());
+    }
 
     // CascadiaSettings::_normalizeCommandLine abuses some aspects from CommandLineToArgvW
     // to simplify the implementation. It assumes that all arguments returned by

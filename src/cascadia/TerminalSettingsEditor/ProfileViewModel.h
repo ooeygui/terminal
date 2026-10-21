@@ -35,7 +35,8 @@ namespace winrt::Microsoft::Terminal::Settings::Editor::implementation
         static Windows::Foundation::Collections::IObservableVector<Editor::Font> MonospaceFontList() noexcept { return _MonospaceFontList; };
 
         ProfileViewModel(const Model::Profile& profile, const Model::CascadiaSettings& settings, const Model::WindowSettings& windowSettings, const Windows::UI::Core::CoreDispatcher& dispatcher);
-        Control::IControlSettings TermSettings() const;
+        Control::IControlSettings TermSettings(bool desktopWallpaperPreview = false) const;
+        bool UseDesktopWallpaperForPreview() const;
         Control::IControlSettings TermSettingsUnfocused() const;
         void DeleteProfile();
 

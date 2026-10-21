@@ -208,8 +208,9 @@ namespace winrt::Microsoft::Terminal::Settings::Editor::implementation
         return til::hstring_format(FMT_COMPILE(L"{}: {}"), KeyDisplayStringRef(), _value);
     }
 
-    AppearanceViewModel::AppearanceViewModel(const Model::AppearanceConfig& appearance) :
-        _appearance{ appearance }
+    AppearanceViewModel::AppearanceViewModel(const Model::AppearanceConfig& appearance, const Model::WindowSettings& windowSettings) :
+        _appearance{ appearance },
+        _windowSettings{ windowSettings }
     {
         // Add a property changed handler to our own property changed event.
         // This propagates changes from the settings model to anybody listening to our
@@ -960,6 +961,16 @@ namespace winrt::Microsoft::Terminal::Settings::Editor::implementation
         return GetLibraryResourceString(alignmentResourceKey);
     }
 
+    void AppearanceViewModel::SetDesktopWallpaperSaturationFromPercentageValue(const double value)
+    {
+        DesktopWallpaperSaturation(static_cast<float>(value / 100.0));
+    }
+
+    void AppearanceViewModel::SetDesktopWallpaperTintOpacityFromPercentageValue(const double value)
+    {
+        DesktopWallpaperTintOpacity(static_cast<float>(value / 100.0));
+    }
+
     hstring AppearanceViewModel::CurrentBackgroundImagePath() const
     {
         const auto bgImagePath = BackgroundImagePath().Path();
@@ -1079,7 +1090,7 @@ namespace winrt::Microsoft::Terminal::Settings::Editor::implementation
     // forces you to revisit those places before bumping it.
 #define APPEARANCE_COUNT(target, name) +1
 #define APPEARANCE_COUNT_CUSTOM(name) +1
-    static_assert(0 APPEARANCE_INHERITABLE_SETTINGS(APPEARANCE_COUNT, APPEARANCE_COUNT_CUSTOM) == 24,
+    static_assert(0 APPEARANCE_INHERITABLE_SETTINGS(APPEARANCE_COUNT, APPEARANCE_COUNT_CUSTOM) == 29,
                   "The set of inheritable appearance settings changed. Update this count, then make "
                   "sure the new/removed setting is also reflected in Appearances.idl and in the XAML "
                   "reset buttons.");

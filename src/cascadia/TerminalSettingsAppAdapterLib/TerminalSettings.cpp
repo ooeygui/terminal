@@ -62,10 +62,10 @@ namespace winrt::Microsoft::Terminal::Settings
         return settings;
     }
 
-    winrt::com_ptr<TerminalSettings> TerminalSettings::CreateForPreview(const Model::CascadiaSettings& appSettings, const Model::WindowSettings& windowSettings, const Model::Profile& profile)
+    winrt::com_ptr<TerminalSettings> TerminalSettings::CreateForPreview(const Model::CascadiaSettings& appSettings, const Model::WindowSettings& windowSettings, const Model::Profile& profile, const bool desktopWallpaperPreview)
     {
         const auto settings = _CreateWithProfileCommon(appSettings, windowSettings, profile);
-        settings->_UseBackgroundImageForWindow = false;
+        settings->_UseBackgroundImageForWindow = desktopWallpaperPreview;
         return settings;
     }
 

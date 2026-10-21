@@ -2912,12 +2912,24 @@ This action is applied immediately and cannot be undone.</value>
     <comment>Header for a switch enabling desktop-relative wallpaper, also known as pseudo-transparency.</comment>
   </data>
   <data name="Globals_BackgroundImageRelativeToDesktop.Description" xml:space="preserve">
-    <value>Use desktop wallpaper when the active profile has no background image or selects "Use desktop wallpaper". Keep it aligned with each monitor as the window moves, without showing windows behind Terminal (pseudo-transparency). A custom profile background image takes precedence.</value>
+    <value>Use desktop wallpaper when the active profile has no background image or selects "Use desktop wallpaper". Keep it aligned with each monitor as the window moves, without showing windows behind Terminal (pseudo-transparency). A custom profile background image takes precedence. Profiles inherit these settings unless overridden under the profile's Appearance page.</value>
     <comment>Description of desktop-relative wallpaper as a fallback for profiles without a background image. "Use desktop wallpaper" refers to an existing Settings UI label.</comment>
   </data>
   <data name="Globals_DesktopWallpaperBlur.Header" xml:space="preserve">
     <value>Wallpaper blur</value>
     <comment>Header for a slider adjusting Gaussian blur of desktop-relative wallpaper.</comment>
+  </data>
+  <data name="Profile_DesktopWallpaper.Header" xml:space="preserve">
+    <value>Match desktop background</value>
+    <comment>Header for per-profile desktop wallpaper settings.</comment>
+  </data>
+  <data name="Profile_DesktopWallpaper.Description" xml:space="preserve">
+    <value>Override the desktop wallpaper settings for this profile. The preview shows the wallpaper effects using a sample from the window's desktop position. The focused pane's profile controls the whole window; custom background images take precedence. Enable whole-window backgrounds under Personalization first. Reset each setting to inherit from Defaults or the global settings. These settings do not vary when the window loses focus.</value>
+    <comment>Description of profile wallpaper overrides and their global prerequisite.</comment>
+  </data>
+  <data name="Profile_DesktopWallpaperToggle.AutomationProperties.Name" xml:space="preserve">
+    <value>Match desktop background</value>
+    <comment>Accessible name for the per-profile desktop wallpaper switch.</comment>
   </data>
   <data name="Globals_DesktopWallpaperBlur.Description" xml:space="preserve">
     <value>Blur the desktop wallpaper by 0 to 100 physical pixels. Set to 0 for a sharp image.</value>

@@ -17,7 +17,7 @@ namespace TerminalAppUnitTests
     class DesktopWallpaperTests;
 }
 
-namespace TerminalApp::DesktopWallpaper
+namespace Microsoft::Terminal::UI::DesktopWallpaper
 {
     struct Monitor
     {
@@ -78,4 +78,5 @@ namespace TerminalApp::DesktopWallpaper
     std::vector<Monitor> Load(const Effects& effects = {});
     std::vector<Monitor> Load(IDesktopWallpaper* wallpaper, const Effects& effects = {});
     std::vector<Monitor> Render(std::span<const MonitorSource> sources, DESKTOP_WALLPAPER_POSITION position, COLORREF background, const Effects& effects = {});
+    winrt::Windows::Graphics::Imaging::SoftwareBitmap CreatePreview(std::span<const Monitor> monitors, const RECT& bounds);
 }

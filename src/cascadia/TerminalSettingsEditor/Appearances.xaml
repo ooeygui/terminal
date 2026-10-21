@@ -912,6 +912,119 @@
             </local:SettingsExpander>
         </StackPanel>
 
+        <local:SettingsExpander x:Name="DesktopWallpaper"
+                                x:Uid="Profile_DesktopWallpaper"
+                                IsExpanded="True"
+                                IsExperimental="True"
+                                Visibility="{x:Bind Appearance.IsDefault, Mode=OneWay}">
+            <StackPanel Style="{StaticResource SettingControlStackStyle}">
+                <ToggleSwitch x:Uid="Profile_DesktopWallpaperToggle"
+                              AutomationProperties.AutomationId="ProfileDesktopWallpaperToggle"
+                              IsOn="{x:Bind Appearance.BackgroundImageRelativeToDesktop, Mode=TwoWay}"
+                              Style="{StaticResource ToggleSwitchInExpanderStyle}" />
+                <local:SettingResetButton SettingName="BackgroundImageRelativeToDesktop"
+                                          Target="{x:Bind Appearance}" />
+            </StackPanel>
+            <local:SettingsExpander.Items>
+                <local:SettingsCard x:Name="DesktopWallpaperBlur"
+                                    x:Uid="Globals_DesktopWallpaperBlur"
+                                    IsEnabled="{x:Bind Appearance.BackgroundImageRelativeToDesktop, Mode=OneWay}">
+                    <Grid Style="{StaticResource CustomSliderControlGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Uid="Globals_DesktopWallpaperBlurSlider"
+                                AutomationProperties.AutomationId="ProfileDesktopWallpaperBlurSlider"
+                                Maximum="100"
+                                Minimum="0"
+                                StepFrequency="0.5"
+                                Value="{x:Bind Appearance.DesktopWallpaperBlur, Mode=TwoWay}" />
+                        <TextBlock Grid.Column="1"
+                                   Style="{StaticResource SliderValueLabelStyle}"
+                                   Text="{x:Bind Appearance.DesktopWallpaperBlur, Mode=OneWay}" />
+                        <local:SettingResetButton Grid.Column="2"
+                                                  Margin="8,0,0,0"
+                                                  SettingName="DesktopWallpaperBlur"
+                                                  Target="{x:Bind Appearance}" />
+                    </Grid>
+                </local:SettingsCard>
+                <local:SettingsCard x:Name="DesktopWallpaperSaturation"
+                                    x:Uid="Globals_DesktopWallpaperSaturation"
+                                    IsEnabled="{x:Bind Appearance.BackgroundImageRelativeToDesktop, Mode=OneWay}">
+                    <Grid Style="{StaticResource CustomSliderControlGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Uid="Globals_DesktopWallpaperSaturationSlider"
+                                AutomationProperties.AutomationId="ProfileDesktopWallpaperSaturationSlider"
+                                Maximum="100"
+                                Minimum="0"
+                                StepFrequency="1"
+                                Value="{x:Bind mtu:Converters.PercentageToPercentageValue(Appearance.DesktopWallpaperSaturation), BindBack=Appearance.SetDesktopWallpaperSaturationFromPercentageValue, Mode=TwoWay}" />
+                        <TextBlock Grid.Column="1"
+                                   Style="{StaticResource SliderValueLabelStyle}"
+                                   Text="{x:Bind mtu:Converters.PercentageToPercentageString(Appearance.DesktopWallpaperSaturation), Mode=OneWay}" />
+                        <local:SettingResetButton Grid.Column="2"
+                                                  Margin="8,0,0,0"
+                                                  SettingName="DesktopWallpaperSaturation"
+                                                  Target="{x:Bind Appearance}" />
+                    </Grid>
+                </local:SettingsCard>
+                <local:SettingsCard x:Name="DesktopWallpaperTint"
+                                    x:Uid="Globals_DesktopWallpaperTint"
+                                    IsEnabled="{x:Bind Appearance.BackgroundImageRelativeToDesktop, Mode=OneWay}">
+                    <StackPanel Style="{StaticResource SettingControlStackStyle}">
+                        <Button x:Uid="Globals_DesktopWallpaperTintButton"
+                                AutomationProperties.AutomationId="ProfileDesktopWallpaperTintButton"
+                                Background="{x:Bind mtu:Converters.ColorToBrush(Appearance.DesktopWallpaperTint), Mode=OneWay}"
+                                Style="{StaticResource ColorButtonStyle}">
+                            <Button.Flyout>
+                                <Flyout>
+                                    <muxc:ColorPicker x:Uid="Globals_DesktopWallpaperTintPicker"
+                                                      AutomationProperties.AutomationId="ProfileDesktopWallpaperTintPicker"
+                                                      Color="{x:Bind Appearance.DesktopWallpaperTint, Mode=TwoWay}"
+                                                      IsAlphaEnabled="False"
+                                                      IsAlphaSliderVisible="False"
+                                                      IsAlphaTextInputVisible="False"
+                                                      IsHexInputVisible="True" />
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                        <local:SettingResetButton SettingName="DesktopWallpaperTint"
+                                                  Target="{x:Bind Appearance}" />
+                    </StackPanel>
+                </local:SettingsCard>
+                <local:SettingsCard x:Name="DesktopWallpaperTintOpacity"
+                                    x:Uid="Globals_DesktopWallpaperTintOpacity"
+                                    IsEnabled="{x:Bind Appearance.BackgroundImageRelativeToDesktop, Mode=OneWay}">
+                    <Grid Style="{StaticResource CustomSliderControlGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Slider x:Uid="Globals_DesktopWallpaperTintOpacitySlider"
+                                AutomationProperties.AutomationId="ProfileDesktopWallpaperTintOpacitySlider"
+                                Maximum="100"
+                                Minimum="0"
+                                StepFrequency="1"
+                                Value="{x:Bind mtu:Converters.PercentageToPercentageValue(Appearance.DesktopWallpaperTintOpacity), BindBack=Appearance.SetDesktopWallpaperTintOpacityFromPercentageValue, Mode=TwoWay}" />
+                        <TextBlock Grid.Column="1"
+                                   Style="{StaticResource SliderValueLabelStyle}"
+                                   Text="{x:Bind mtu:Converters.PercentageToPercentageString(Appearance.DesktopWallpaperTintOpacity), Mode=OneWay}" />
+                        <local:SettingResetButton Grid.Column="2"
+                                                  Margin="8,0,0,0"
+                                                  SettingName="DesktopWallpaperTintOpacity"
+                                                  Target="{x:Bind Appearance}" />
+                    </Grid>
+                </local:SettingsCard>
+            </local:SettingsExpander.Items>
+        </local:SettingsExpander>
+
         <!--  Grouping: Text Formatting  -->
         <TextBlock x:Uid="Appearance_TextFormattingHeader"
                    Style="{StaticResource TextBlockSubHeaderStyle}" />

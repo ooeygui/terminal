@@ -4029,20 +4029,28 @@ namespace winrt::TerminalApp::implementation
     // - <none>
     void TerminalPage::_SetBackgroundImage(const winrt::Microsoft::Terminal::Settings::Model::IAppearanceConfig& newAppearance)
     {
-        const auto desktopRelative = ::TerminalApp::DesktopWallpaper::ShouldUseDesktopRelativeWallpaper(
-            _currentWindowSettings().UseBackgroundImageForWindow(),
-            _currentWindowSettings().BackgroundImageRelativeToDesktop(),
+        const auto settings = _currentWindowSettings();
+#define RESOLVE_WALLPAPER_SETTING(name) \
+    const auto name = (newAppearance.Has##name() || newAppearance.name##OverrideSource()) ? newAppearance.name() : settings.name()
+        RESOLVE_WALLPAPER_SETTING(BackgroundImageRelativeToDesktop);
+        RESOLVE_WALLPAPER_SETTING(DesktopWallpaperBlur);
+        RESOLVE_WALLPAPER_SETTING(DesktopWallpaperSaturation);
+        RESOLVE_WALLPAPER_SETTING(DesktopWallpaperTint);
+        RESOLVE_WALLPAPER_SETTING(DesktopWallpaperTintOpacity);
+#undef RESOLVE_WALLPAPER_SETTING
+        const auto desktopRelative = ::Microsoft::Terminal::UI::DesktopWallpaper::ShouldUseDesktopRelativeWallpaper(
+            settings.UseBackgroundImageForWindow(),
+            BackgroundImageRelativeToDesktop,
             newAppearance.BackgroundImagePath().Path());
         const auto wasDesktopRelative = std::exchange(_desktopWallpaperEnabled, desktopRelative);
         if (desktopRelative)
         {
-            const auto settings = _currentWindowSettings();
-            const auto tint = settings.DesktopWallpaperTint();
-            const ::TerminalApp::DesktopWallpaper::Effects effects{
-                settings.DesktopWallpaperBlur(),
-                settings.DesktopWallpaperSaturation(),
+            const auto tint = DesktopWallpaperTint;
+            const ::Microsoft::Terminal::UI::DesktopWallpaper::Effects effects{
+                DesktopWallpaperBlur,
+                DesktopWallpaperSaturation,
                 RGB(tint.R, tint.G, tint.B),
-                settings.DesktopWallpaperTintOpacity()
+                DesktopWallpaperTintOpacity
             };
             const auto effectsChanged = std::exchange(_desktopWallpaperEffects, effects) != effects;
             _tabContent.Background(nullptr);
@@ -4164,11 +4172,11 @@ namespace winrt::TerminalApp::implementation
                     }
                 }
                 co_await winrt::resume_background();
-                std::vector<::TerminalApp::DesktopWallpaper::Monitor> monitors;
+                std::vector<::Microsoft::Terminal::UI::DesktopWallpaper::Monitor> monitors;
                 bool loaded = false;
                 try
                 {
-                    monitors = ::TerminalApp::DesktopWallpaper::Load(effects);
+                    monitors = ::Microsoft::Terminal::UI::DesktopWallpaper::Load(effects);
                     THROW_HR_IF(HRESULT_FROM_WIN32(ERROR_NOT_READY), monitors.empty());
                     loaded = true;
                 }
@@ -4220,7 +4228,7 @@ namespace winrt::TerminalApp::implementation
             }
             if (!_desktopWallpaperPresenter && !_desktopWallpaperMonitors.empty())
             {
-                _desktopWallpaperPresenter = std::make_unique<::TerminalApp::DesktopWallpaper::Presenter>(parent);
+                _desktopWallpaperPresenter = std::make_unique<::Microsoft::Terminal::UI::DesktopWallpaper::Presenter>(parent);
                 _desktopWallpaperMonitorsChanged = true;
             }
             if (_desktopWallpaperPresenter && _desktopWallpaperMonitorsChanged)

@@ -7,7 +7,7 @@
 #include <d2d1.h>
 #include <shobjidl_core.h>
 
-namespace TerminalApp::DesktopWallpaper
+namespace Microsoft::Terminal::UI::DesktopWallpaper
 {
     inline D2D1_RECT_F ImageRect(const float imageWidth, const float imageHeight, const RECT& bounds, const DESKTOP_WALLPAPER_POSITION position)
     {

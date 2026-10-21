@@ -38,6 +38,8 @@ namespace Microsoft.Terminal.Settings.Editor
         void SetFontWeightFromDouble(Double fontWeight);
         void SetBackgroundImageOpacityFromPercentageValue(Double percentageValue);
         void SetBackgroundImagePath(String path);
+        void SetDesktopWallpaperSaturationFromPercentageValue(Double value);
+        void SetDesktopWallpaperTintOpacityFromPercentageValue(Double value);
 
         String CurrentBackgroundImagePath { get; };
         Boolean UseDesktopBGImage;
@@ -87,6 +89,11 @@ namespace Microsoft.Terminal.Settings.Editor
         OBSERVABLE_PROJECTED_APPEARANCE_SETTING(UInt32, CursorHeight);
         OBSERVABLE_PROJECTED_APPEARANCE_SETTING(Microsoft.Terminal.Settings.Model.IMediaResource, BackgroundImagePath);
         OBSERVABLE_PROJECTED_APPEARANCE_SETTING(Single, BackgroundImageOpacity);
+        OBSERVABLE_PROJECTED_APPEARANCE_SETTING(Boolean, BackgroundImageRelativeToDesktop);
+        OBSERVABLE_PROJECTED_APPEARANCE_SETTING(Single, DesktopWallpaperBlur);
+        OBSERVABLE_PROJECTED_APPEARANCE_SETTING(Single, DesktopWallpaperSaturation);
+        OBSERVABLE_PROJECTED_APPEARANCE_SETTING(Windows.UI.Color, DesktopWallpaperTint);
+        OBSERVABLE_PROJECTED_APPEARANCE_SETTING(Single, DesktopWallpaperTintOpacity);
         OBSERVABLE_PROJECTED_APPEARANCE_SETTING(Windows.UI.Xaml.Media.Stretch, BackgroundImageStretchMode);
         OBSERVABLE_PROJECTED_APPEARANCE_SETTING(Microsoft.Terminal.Settings.Model.ConvergedAlignment, BackgroundImageAlignment);
         OBSERVABLE_PROJECTED_APPEARANCE_SETTING(Microsoft.Terminal.Settings.Model.IntenseStyle, IntenseTextStyle);

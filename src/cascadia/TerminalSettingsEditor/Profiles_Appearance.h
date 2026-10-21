@@ -8,6 +8,7 @@
 #include "Profiles_Appearance.g.h"
 #include "PreviewConnection.h"
 #include "Utils.h"
+#include <DesktopWallpaper.h>
 
 namespace winrt::Microsoft::Terminal::Settings::Editor::implementation
 {
@@ -26,6 +27,7 @@ namespace winrt::Microsoft::Terminal::Settings::Editor::implementation
 
     private:
         void _onProfilePropertyChanged(const IInspectable&, const PropertyChangedEventArgs&);
+        winrt::fire_and_forget _UpdatePreviewWallpaper();
 
         winrt::com_ptr<PreviewConnection> _previewConnection{ nullptr };
         Microsoft::Terminal::Control::TermControl _previewControl{ nullptr };
@@ -33,6 +35,10 @@ namespace winrt::Microsoft::Terminal::Settings::Editor::implementation
         Windows::UI::Xaml::Data::INotifyPropertyChanged::PropertyChanged_revoker _ViewModelChangedRevoker;
         Windows::UI::Xaml::Data::INotifyPropertyChanged::PropertyChanged_revoker _AppearanceViewModelChangedRevoker;
         winrt::weak_ref<Editor::IHostedInWindow> _weakWindowRoot;
+        std::optional<::Microsoft::Terminal::UI::DesktopWallpaper::Effects> _previewWallpaperEffects;
+        uint64_t _previewWallpaperGeneration{ 0 };
+        bool _previewActive{ false };
+        bool _previewWallpaperVisible{ false };
     };
 };
 

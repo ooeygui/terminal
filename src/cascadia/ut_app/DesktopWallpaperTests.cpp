@@ -2,14 +2,14 @@
 // Licensed under the MIT license.
 
 #include "precomp.h"
-#include "../TerminalApp/DesktopWallpaperGeometry.h"
-#include "../TerminalApp/DesktopWallpaper.h"
+#include "../WinRTUtils/inc/DesktopWallpaperGeometry.h"
+#include "../WinRTUtils/inc/DesktopWallpaper.h"
 #include <winrt/Windows.Storage.Streams.h>
 #include <wincodec.h>
 #include <wrl/implements.h>
 
 using namespace WEX::TestExecution;
-using namespace TerminalApp::DesktopWallpaper;
+using namespace Microsoft::Terminal::UI::DesktopWallpaper;
 
 namespace TerminalAppUnitTests
 {
@@ -93,6 +93,7 @@ namespace TerminalAppUnitTests
         TEST_METHOD(WallpaperDeviceRecovery);
         TEST_METHOD(WallpaperWithDisconnectedMonitor);
         TEST_METHOD(WallpaperUpdatesReusePresenter);
+        TEST_METHOD(WallpaperPreview);
     };
 
     void DesktopWallpaperTests::WallpaperLayouts()
@@ -303,6 +304,11 @@ namespace TerminalAppUnitTests
             }
         }
         VERIFY_IS_TRUE(blurredVariation < originalVariation / 2);
+        const auto preview = CreatePreview(blurred, whole[0].bounds);
+        winrt::Windows::Storage::Streams::Buffer previewPixels(8 * 4 * 4);
+        preview.CopyToBuffer(previewPixels);
+        VERIFY_ARE_EQUAL(after.Length(), previewPixels.Length());
+        VERIFY_ARE_EQUAL(0, memcmp(after.data(), previewPixels.data(), after.Length()));
     }
 
     void DesktopWallpaperTests::DesktopWallpaperEffects()
@@ -340,6 +346,53 @@ namespace TerminalAppUnitTests
         VERIFY_THROWS(Render(source, DWPOS_FILL, RGB(0, 0, 0), effects), wil::ResultException);
         effects.blur = -1;
         VERIFY_THROWS(Render(source, DWPOS_FILL, RGB(0, 0, 0), effects), wil::ResultException);
+    }
+
+    void DesktopWallpaperTests::WallpaperPreview()
+    {
+        const MonitorSource sources[]{
+            { { -16, 0, 0, 16 }, L"" },
+            { { 0, 0, 16, 16 }, L"" }
+        };
+        for (const auto saturation : { 0.0f, 1.0f })
+        {
+            Effects effects;
+            effects.blur = 2;
+            effects.saturation = saturation;
+            const auto monitors = Render(sources, DWPOS_FILL, RGB(100, 150, 200), effects);
+            const auto preview = CreatePreview(monitors, { -8, -2, 8, 8 });
+            VERIFY_ARE_EQUAL(16, preview.PixelWidth());
+            VERIFY_ARE_EQUAL(10, preview.PixelHeight());
+            winrt::Windows::Storage::Streams::Buffer pixels(16 * 10 * 4);
+            preview.CopyToBuffer(pixels);
+            for (uint32_t y = 0; y < 10; ++y)
+            {
+                for (uint32_t x = 0; x < 16; ++x)
+                {
+                    const auto i = (y * 16 + x) * 4;
+                    if (y < 2)
+                    {
+                        VERIFY_ARE_EQUAL(uint8_t{ 0 }, pixels.data()[i + 3]);
+                    }
+                    else
+                    {
+                        VERIFY_ARE_EQUAL(uint8_t{ 255 }, pixels.data()[i + 3]);
+                        if (saturation == 0)
+                        {
+                            VERIFY_IS_TRUE(std::abs(pixels.data()[i] - pixels.data()[i + 1]) <= 1);
+                            VERIFY_IS_TRUE(std::abs(pixels.data()[i + 1] - pixels.data()[i + 2]) <= 1);
+                        }
+                        else
+                        {
+                            VERIFY_IS_TRUE(std::abs(pixels.data()[i] - 200) <= 1);
+                            VERIFY_IS_TRUE(std::abs(pixels.data()[i + 1] - 150) <= 1);
+                            VERIFY_IS_TRUE(std::abs(pixels.data()[i + 2] - 100) <= 1);
+                        }
+                    }
+                }
+            }
+            VERIFY_THROWS(CreatePreview(monitors, { 0, 0, 0, 16 }), wil::ResultException);
+        }
     }
 
     void DesktopWallpaperTests::WallpaperWithDisconnectedMonitor()
