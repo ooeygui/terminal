@@ -205,7 +205,7 @@ void GlobalAppSettings::LayerJson(const Json::Value& json, const OriginTag origi
     }
     if (HasDesktopWallpaperBlur())
     {
-        DesktopWallpaperBlur(std::clamp(DesktopWallpaperBlur(), 0.0f, 250.0f));
+        DesktopWallpaperBlur(std::clamp(DesktopWallpaperBlur(), 0.0f, 100.0f));
     }
     if (HasDesktopWallpaperSaturation())
     {

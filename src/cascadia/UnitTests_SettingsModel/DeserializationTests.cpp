@@ -29,6 +29,7 @@ namespace SettingsModelUnitTests
         TEST_METHOD(ValidateManyWarnings);
         TEST_METHOD(LayerGlobalProperties);
         TEST_METHOD(DesktopRelativeWallpaperSetting);
+        TEST_METHOD(DesktopWallpaperProfileBackgrounds);
         TEST_METHOD(ValidateProfileOrdering);
         TEST_METHOD(ValidateHideProfiles);
         TEST_METHOD(TestReorderWithNullGuids);
@@ -386,6 +387,7 @@ namespace SettingsModelUnitTests
     void DeserializationTests::DesktopRelativeWallpaperSetting()
     {
         const auto defaults = createSettings(R"({"profiles":[{"name":"test"}]})");
+        VERIFY_IS_FALSE(defaults->WindowSettingsDefaults().UseBackgroundImageForWindow());
         VERIFY_IS_FALSE(defaults->WindowSettingsDefaults().BackgroundImageRelativeToDesktop());
         VERIFY_ARE_EQUAL(0.0f, defaults->WindowSettingsDefaults().DesktopWallpaperBlur());
         VERIFY_ARE_EQUAL(1.0f, defaults->WindowSettingsDefaults().DesktopWallpaperSaturation());
@@ -426,10 +428,20 @@ namespace SettingsModelUnitTests
             "experimental.desktopWallpaperSaturation": -1,
             "experimental.desktopWallpaperTintOpacity": 2,
             "profiles": [{"name":"test"}]
-        })")->WindowSettingsDefaults();
-        VERIFY_ARE_EQUAL(250.0f, clamped.DesktopWallpaperBlur());
+        })")
+                                 ->WindowSettingsDefaults();
+        VERIFY_ARE_EQUAL(100.0f, clamped.DesktopWallpaperBlur());
         VERIFY_ARE_EQUAL(0.0f, clamped.DesktopWallpaperSaturation());
         VERIFY_ARE_EQUAL(1.0f, clamped.DesktopWallpaperTintOpacity());
+
+        for (const auto& [input, expected] : { std::pair{ -1.0f, 0.0f }, std::pair{ 0.0f, 0.0f }, std::pair{ 100.0f, 100.0f }, std::pair{ 100.5f, 100.0f } })
+        {
+            auto boundary = json;
+            boundary["experimental.desktopWallpaperBlur"] = input;
+            const auto parsed = createSettings(boundary.toStyledString());
+            VERIFY_ARE_EQUAL(expected, parsed->WindowSettingsDefaults().DesktopWallpaperBlur());
+            VERIFY_ARE_EQUAL(expected, parsed->ToJson()["experimental.desktopWallpaperBlur"].asFloat());
+        }
 
         const auto layered = winrt::make_self<implementation::CascadiaSettings>(
             R"({"experimental.desktopWallpaperSaturation":0.5,"profiles":[{"name":"test"}]})",
@@ -437,6 +449,39 @@ namespace SettingsModelUnitTests
         VERIFY_ARE_EQUAL(8.0f, layered->WindowSettingsDefaults().DesktopWallpaperBlur());
         VERIFY_ARE_EQUAL(0.5f, layered->WindowSettingsDefaults().DesktopWallpaperSaturation());
         VERIFY_ARE_EQUAL(uint8_t{ 0xab }, layered->WindowSettingsDefaults().DesktopWallpaperTint().R);
+    }
+
+    void DeserializationTests::DesktopWallpaperProfileBackgrounds()
+    {
+        const auto settings = createSettings(R"({
+            "profiles": [
+                {"name":"unset"},
+                {"name":"empty","backgroundImage":""},
+                {"name":"desktop","backgroundImage":"desktopWallpaper"},
+                {"name":"custom","backgroundImage":"C:\\background.png"}
+            ]
+        })");
+        const auto profiles = settings->ActiveProfiles();
+        VERIFY_ARE_EQUAL(4u, profiles.Size());
+        VERIFY_IS_TRUE(profiles.GetAt(0).DefaultAppearance().BackgroundImagePath().Path().empty());
+        VERIFY_IS_TRUE(profiles.GetAt(1).DefaultAppearance().BackgroundImagePath().Path().empty());
+        VERIFY_ARE_EQUAL(L"desktopWallpaper", profiles.GetAt(2).DefaultAppearance().BackgroundImagePath().Path());
+        VERIFY_ARE_EQUAL(L"C:\\background.png", profiles.GetAt(3).DefaultAppearance().BackgroundImagePath().Path());
+
+        const auto inherited = createSettings(R"({
+            "profiles": {
+                "defaults": {"backgroundImage":"C:\\inherited.png"},
+                "list": [
+                    {"name":"inherited"},
+                    {"name":"empty","backgroundImage":""},
+                    {"name":"custom","backgroundImage":"C:\\custom.png"}
+                ]
+            }
+        })")->ActiveProfiles();
+        VERIFY_ARE_EQUAL(3u, inherited.Size());
+        VERIFY_ARE_EQUAL(L"C:\\inherited.png", inherited.GetAt(0).DefaultAppearance().BackgroundImagePath().Path());
+        VERIFY_IS_TRUE(inherited.GetAt(1).DefaultAppearance().BackgroundImagePath().Path().empty());
+        VERIFY_ARE_EQUAL(L"C:\\custom.png", inherited.GetAt(2).DefaultAppearance().BackgroundImagePath().Path());
     }
 
     void DeserializationTests::ValidateProfileOrdering()

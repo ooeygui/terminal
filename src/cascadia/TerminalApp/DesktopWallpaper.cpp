@@ -10,13 +10,14 @@
 #include <d2d1_1.h>
 #include <d2d1effects.h>
 #include <d3d11.h>
+#include <til/string.h>
 #include <winrt/Windows.Storage.Streams.h>
 
 namespace TerminalApp::DesktopWallpaper
 {
     namespace
     {
-        winrt::com_ptr<ID2D1DeviceContext> CreateGraphicsContext()
+        winrt::com_ptr<ID2D1DeviceContext> CreateGraphicsContext(ID3D11Device** graphicsDevice = nullptr)
         {
             winrt::com_ptr<ID3D11Device> d3d;
             const auto hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, D3D11_CREATE_DEVICE_BGRA_SUPPORT, nullptr, 0, D3D11_SDK_VERSION, d3d.put(), nullptr, nullptr);
@@ -35,31 +36,30 @@ namespace TerminalApp::DesktopWallpaper
             THROW_IF_FAILED(factory->CreateDevice(d3d.as<IDXGIDevice>().get(), device.put()));
             winrt::com_ptr<ID2D1DeviceContext> context;
             THROW_IF_FAILED(device->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, context.put()));
+            if (graphicsDevice)
+            {
+                d3d.copy_to(graphicsDevice);
+            }
             return context;
         }
     }
 
     Presenter::Presenter(const HWND parent)
     {
-        static const auto className = [] {
-            WNDCLASSW windowClass{};
-            windowClass.lpfnWndProc = DefWindowProcW;
-            windowClass.hInstance = GetModuleHandleW(nullptr);
-            windowClass.lpszClassName = L"TerminalDesktopWallpaper";
-            THROW_LAST_ERROR_IF(!RegisterClassW(&windowClass) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS);
-            return windowClass.lpszClassName;
-        }();
-        _window.reset(CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, className, L"", WS_CHILD | WS_DISABLED, 0, 0, 0, 0, parent, nullptr, GetModuleHandleW(nullptr), nullptr));
-        THROW_LAST_ERROR_IF(!_window);
-        const auto context = CreateGraphicsContext();
+        const auto context = CreateGraphicsContext(_graphicsDevice.put());
         winrt::com_ptr<ID2D1Device> d2d;
         context->GetDevice(d2d.put());
         THROW_IF_FAILED(DCompositionCreateDevice2(d2d.get(), __uuidof(IDCompositionDesktopDevice), _device.put_void()));
-        THROW_IF_FAILED(_device->CreateTargetForHwnd(_window.get(), false, _target.put()));
+        // A bottom target on the host HWND stays below the XAML island, including Settings and overlays.
+        THROW_IF_FAILED(_device->CreateTargetForHwnd(parent, false, _target.put()));
         THROW_IF_FAILED(_device->CreateVisual(_root.put()));
         THROW_IF_FAILED(_device->CreateEffectGroup(_opacity.put()));
         THROW_IF_FAILED(_root->SetEffect(_opacity.get()));
-        THROW_IF_FAILED(_target->SetRoot(_root.get()));
+    }
+
+    bool Presenter::IsDeviceValid() const
+    {
+        return SUCCEEDED(_graphicsDevice->GetDeviceRemovedReason());
     }
 
     void Presenter::SetMonitors(const std::span<const Monitor> monitors)
@@ -114,14 +114,20 @@ namespace TerminalApp::DesktopWallpaper
         const auto height = bounds.bottom - bounds.top;
         if (width <= 0 || height <= 0)
         {
-            ShowWindow(_window.get(), SW_HIDE);
-            _visible = false;
+            if (_visible)
+            {
+                THROW_IF_FAILED(_target->SetRoot(nullptr));
+                THROW_IF_FAILED(_device->Commit());
+                _visible = false;
+            }
             return;
         }
         bool changed = !_positioned;
         if (!_visible || !EqualRect(&_bounds, &bounds))
         {
-            THROW_IF_WIN32_BOOL_FALSE(SetWindowPos(_window.get(), HWND_BOTTOM, bounds.left, bounds.top, width, height, SWP_NOACTIVATE | SWP_SHOWWINDOW));
+            THROW_IF_FAILED(_target->SetRoot(_root.get()));
+            THROW_IF_FAILED(_root->SetOffsetX(static_cast<float>(bounds.left)));
+            THROW_IF_FAILED(_root->SetOffsetY(static_cast<float>(bounds.top)));
             THROW_IF_FAILED(_root->SetClip(D2D1::RectF(0, 0, static_cast<float>(width), static_cast<float>(height))));
             _bounds = bounds;
             _visible = true;
@@ -225,10 +231,21 @@ namespace TerminalApp::DesktopWallpaper
         }
     }
 
+    bool ShouldUseDesktopRelativeWallpaper(const bool useBackgroundImageForWindow, const bool relativeToDesktop, const std::wstring_view imagePath) noexcept
+    {
+        return useBackgroundImageForWindow && relativeToDesktop &&
+               (imagePath.empty() || til::equals_insensitive_ascii(imagePath, L"desktopWallpaper"));
+    }
+
     std::vector<Monitor> Load(const Effects& effects)
     {
         const auto apartment = wil::CoInitializeEx(COINIT_MULTITHREADED);
         const auto wallpaper = winrt::create_instance<IDesktopWallpaper>(CLSID_DesktopWallpaper, CLSCTX_ALL);
+        return Load(wallpaper.get(), effects);
+    }
+
+    std::vector<Monitor> Load(IDesktopWallpaper* wallpaper, const Effects& effects)
+    {
         DESKTOP_WALLPAPER_POSITION position;
         COLORREF background;
         UINT count;
@@ -243,11 +260,12 @@ namespace TerminalApp::DesktopWallpaper
             THROW_IF_FAILED(wallpaper->GetMonitorDevicePathAt(i, device.put()));
             RECT bounds;
             const auto hr = wallpaper->GetMonitorRECT(device.get(), &bounds);
-            if (hr == S_FALSE)
+            if (hr == S_FALSE || FAILED(hr))
             {
-                continue; // The shell also enumerates disconnected monitors.
+                // Stale shell monitor entries can return E_FAIL instead of S_FALSE.
+                LOG_IF_FAILED(hr);
+                continue;
             }
-            THROW_IF_FAILED(hr);
             wil::unique_cotaskmem_string path;
             THROW_IF_FAILED(wallpaper->GetWallpaper(device.get(), path.put()));
             sources.push_back({ bounds, path ? path.get() : L"" });
@@ -257,7 +275,7 @@ namespace TerminalApp::DesktopWallpaper
 
     std::vector<Monitor> Render(const std::span<const MonitorSource> sources, const DESKTOP_WALLPAPER_POSITION position, const COLORREF background, const Effects& effects)
     {
-        THROW_HR_IF(E_INVALIDARG, !std::isfinite(effects.blur) || effects.blur < 0 || effects.blur > 250 || !std::isfinite(effects.saturation) || effects.saturation < 0 || effects.saturation > 1 || !std::isfinite(effects.tintOpacity) || effects.tintOpacity < 0 || effects.tintOpacity > 1);
+        THROW_HR_IF(E_INVALIDARG, !std::isfinite(effects.blur) || effects.blur < 0 || effects.blur > 100 || !std::isfinite(effects.saturation) || effects.saturation < 0 || effects.saturation > 1 || !std::isfinite(effects.tintOpacity) || effects.tintOpacity < 0 || effects.tintOpacity > 1);
         const auto effectsContext = effects.blur > 0 || effects.saturation != 1 || effects.tintOpacity > 0 ? CreateGraphicsContext() : nullptr;
         RECT desktop{};
         for (size_t i = 0; i < sources.size(); ++i)

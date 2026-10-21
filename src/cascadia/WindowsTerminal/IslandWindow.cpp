@@ -590,6 +590,7 @@ void IslandWindow::_OnGetMinMaxInfo(const WPARAM /*wParam*/, const LPARAM lParam
     }
     case WM_DISPLAYCHANGE:
     case WM_SETTINGCHANGE:
+    case WM_DWMCOMPOSITIONCHANGED:
     {
         DesktopWallpaperChanged.raise(true, 0, 0);
         break;

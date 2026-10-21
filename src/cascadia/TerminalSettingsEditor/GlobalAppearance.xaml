@@ -107,7 +107,7 @@
                         </Grid.ColumnDefinitions>
                         <Slider x:Uid="Globals_DesktopWallpaperBlurSlider"
                                 AutomationProperties.AutomationId="DesktopWallpaperBlurSlider"
-                                Maximum="250"
+                                Maximum="100"
                                 Minimum="0"
                                 StepFrequency="0.5"
                                 Value="{x:Bind ViewModel.DesktopWallpaperBlur, Mode=TwoWay}" />

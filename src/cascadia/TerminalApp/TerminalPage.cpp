@@ -4029,9 +4029,10 @@ namespace winrt::TerminalApp::implementation
     // - <none>
     void TerminalPage::_SetBackgroundImage(const winrt::Microsoft::Terminal::Settings::Model::IAppearanceConfig& newAppearance)
     {
-        const auto desktopRelative = _currentWindowSettings().UseBackgroundImageForWindow() &&
-                                     _currentWindowSettings().BackgroundImageRelativeToDesktop() &&
-                                     til::equals_insensitive_ascii(newAppearance.BackgroundImagePath().Path(), L"desktopWallpaper");
+        const auto desktopRelative = ::TerminalApp::DesktopWallpaper::ShouldUseDesktopRelativeWallpaper(
+            _currentWindowSettings().UseBackgroundImageForWindow(),
+            _currentWindowSettings().BackgroundImageRelativeToDesktop(),
+            newAppearance.BackgroundImagePath().Path());
         const auto wasDesktopRelative = std::exchange(_desktopWallpaperEnabled, desktopRelative);
         if (desktopRelative)
         {
@@ -4151,60 +4152,87 @@ namespace winrt::TerminalApp::implementation
         const auto effects = _desktopWallpaperEffects;
         try
         {
-            co_await winrt::resume_background();
-            auto monitors = ::TerminalApp::DesktopWallpaper::Load(effects);
-            co_await wil::resume_foreground(dispatcher);
-            const auto page = weak.get();
-            if (!page || generation != page->_desktopWallpaperGeneration)
+            for (const auto delay : { 0ms, 250ms, 750ms, 2000ms })
             {
-                co_return;
-            }
-            page->_desktopWallpaperMonitors = std::move(monitors);
-            if (page->_desktopWallpaperMonitors.empty())
-            {
-                page->_desktopWallpaperPresenter.reset();
-            }
-            page->_PositionDesktopWallpaper();
-            co_return;
-        }
-        catch (...)
-        {
-            LOG_CAUGHT_EXCEPTION();
-        }
-        try
-        {
-            co_await wil::resume_foreground(dispatcher);
-            if (const auto page = weak.get(); page && generation == page->_desktopWallpaperGeneration)
-            {
-                page->_desktopWallpaperPresenter.reset();
-                page->_desktopWallpaperMonitors.clear();
+                co_await winrt::resume_after(delay);
+                co_await wil::resume_foreground(dispatcher);
+                {
+                    const auto page = weak.get();
+                    if (!page || generation != page->_desktopWallpaperGeneration)
+                    {
+                        co_return;
+                    }
+                }
+                co_await winrt::resume_background();
+                std::vector<::TerminalApp::DesktopWallpaper::Monitor> monitors;
+                bool loaded = false;
+                try
+                {
+                    monitors = ::TerminalApp::DesktopWallpaper::Load(effects);
+                    THROW_HR_IF(HRESULT_FROM_WIN32(ERROR_NOT_READY), monitors.empty());
+                    loaded = true;
+                }
+                CATCH_LOG();
+                co_await wil::resume_foreground(dispatcher);
+                {
+                    const auto page = weak.get();
+                    if (!page || generation != page->_desktopWallpaperGeneration)
+                    {
+                        co_return;
+                    }
+                    if (loaded)
+                    {
+                        page->_desktopWallpaperMonitors = std::move(monitors);
+                        page->_desktopWallpaperMonitorsChanged = true;
+                        // Display changes can invalidate the device even if loading the image succeeds.
+                        page->_desktopWallpaperPresenter.reset();
+                        if (page->_PositionDesktopWallpaper())
+                        {
+                            TraceLoggingWrite(
+                                g_hTerminalAppProvider,
+                                "DesktopWallpaperPresented",
+                                TraceLoggingLevel(WINEVENT_LEVEL_INFO),
+                                TraceLoggingUInt32(static_cast<uint32_t>(page->_desktopWallpaperMonitors.size()), "monitorCount"),
+                                TraceLoggingFloat64(page->DesktopWallpaperCanvas().ActualWidth(), "width"),
+                                TraceLoggingFloat64(page->DesktopWallpaperCanvas().ActualHeight(), "height"),
+                                TraceLoggingFloat64(page->DesktopWallpaperCanvas().Opacity(), "opacity"));
+                            co_return;
+                        }
+                    }
+                }
             }
         }
         CATCH_LOG();
     }
 
-    void TerminalPage::_PositionDesktopWallpaper(const double offsetX, const double offsetY)
+    bool TerminalPage::_PositionDesktopWallpaper(const double offsetX, const double offsetY)
     {
         if (!_desktopWallpaperEnabled || !_desktopWallpaperHwnd || !XamlRoot())
         {
-            return;
+            return false;
         }
         try
         {
             const auto parent = GetParent(_desktopWallpaperHwnd);
             THROW_HR_IF(E_UNEXPECTED, !parent);
-            if (!_desktopWallpaperMonitors.empty())
+            if (_desktopWallpaperPresenter && !_desktopWallpaperPresenter->IsDeviceValid())
             {
-                if (!_desktopWallpaperPresenter)
-                {
-                    _desktopWallpaperPresenter = std::make_unique<::TerminalApp::DesktopWallpaper::Presenter>(parent);
-                }
+                LOG_HR(DXGI_ERROR_DEVICE_REMOVED);
+                _desktopWallpaperPresenter.reset();
+            }
+            if (!_desktopWallpaperPresenter && !_desktopWallpaperMonitors.empty())
+            {
+                _desktopWallpaperPresenter = std::make_unique<::TerminalApp::DesktopWallpaper::Presenter>(parent);
+                _desktopWallpaperMonitorsChanged = true;
+            }
+            if (_desktopWallpaperPresenter && _desktopWallpaperMonitorsChanged)
+            {
                 _desktopWallpaperPresenter->SetMonitors(_desktopWallpaperMonitors);
-                _desktopWallpaperMonitors.clear();
+                _desktopWallpaperMonitorsChanged = false;
             }
             if (!_desktopWallpaperPresenter)
             {
-                return;
+                return false;
             }
             POINT islandOrigin{};
             THROW_IF_WIN32_BOOL_FALSE(ClientToScreen(_desktopWallpaperHwnd, &islandOrigin));
@@ -4223,12 +4251,13 @@ namespace winrt::TerminalApp::implementation
                 top + static_cast<LONG>(std::ceil(canvas.ActualHeight() * scale))
             };
             _desktopWallpaperPresenter->Position(bounds, originX + offsetX, originY + offsetY, static_cast<float>(canvas.Opacity()));
+            return true;
         }
         catch (...)
         {
             LOG_CAUGHT_EXCEPTION();
             _desktopWallpaperPresenter.reset();
-            _desktopWallpaperMonitors.clear();
+            return false;
         }
     }
 

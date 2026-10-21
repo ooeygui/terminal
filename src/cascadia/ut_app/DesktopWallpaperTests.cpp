@@ -6,12 +6,75 @@
 #include "../TerminalApp/DesktopWallpaper.h"
 #include <winrt/Windows.Storage.Streams.h>
 #include <wincodec.h>
+#include <wrl/implements.h>
 
 using namespace WEX::TestExecution;
 using namespace TerminalApp::DesktopWallpaper;
 
 namespace TerminalAppUnitTests
 {
+    class WallpaperWithStaleMonitor final :
+        public Microsoft::WRL::RuntimeClass<Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>, IDesktopWallpaper>
+    {
+    public:
+        HRESULT staleResult{ E_FAIL };
+        bool staleWallpaperRequested{ false };
+
+        STDMETHODIMP SetWallpaper(LPCWSTR, LPCWSTR) override { return E_NOTIMPL; }
+        STDMETHODIMP GetWallpaper(LPCWSTR monitor, LPWSTR* path) override
+        {
+            staleWallpaperRequested |= wcscmp(monitor, L"stale") == 0;
+            return CopyString(L"", path);
+        }
+        STDMETHODIMP GetMonitorDevicePathAt(UINT index, LPWSTR* path) override
+        {
+            const wchar_t* monitors[]{ L"left", L"stale", L"right" };
+            return index < ARRAYSIZE(monitors) ? CopyString(monitors[index], path) : E_INVALIDARG;
+        }
+        STDMETHODIMP GetMonitorDevicePathCount(UINT* count) override
+        {
+            *count = 3;
+            return S_OK;
+        }
+        STDMETHODIMP GetMonitorRECT(LPCWSTR monitor, RECT* bounds) override
+        {
+            *bounds = {};
+            if (wcscmp(monitor, L"stale") == 0)
+            {
+                return staleResult;
+            }
+            *bounds = wcscmp(monitor, L"left") == 0 ? RECT{ -16, 0, 0, 16 } : RECT{ 0, 0, 16, 16 };
+            return S_OK;
+        }
+        STDMETHODIMP SetBackgroundColor(COLORREF) override { return E_NOTIMPL; }
+        STDMETHODIMP GetBackgroundColor(COLORREF* color) override
+        {
+            *color = RGB(12, 34, 56);
+            return S_OK;
+        }
+        STDMETHODIMP SetPosition(DESKTOP_WALLPAPER_POSITION) override { return E_NOTIMPL; }
+        STDMETHODIMP GetPosition(DESKTOP_WALLPAPER_POSITION* position) override
+        {
+            *position = DWPOS_FILL;
+            return S_OK;
+        }
+        STDMETHODIMP SetSlideshow(IShellItemArray*) override { return E_NOTIMPL; }
+        STDMETHODIMP GetSlideshow(IShellItemArray**) override { return E_NOTIMPL; }
+        STDMETHODIMP SetSlideshowOptions(DESKTOP_SLIDESHOW_OPTIONS, UINT) override { return E_NOTIMPL; }
+        STDMETHODIMP GetSlideshowOptions(DESKTOP_SLIDESHOW_OPTIONS*, UINT*) override { return E_NOTIMPL; }
+        STDMETHODIMP AdvanceSlideshow(LPCWSTR, DESKTOP_SLIDESHOW_DIRECTION) override { return E_NOTIMPL; }
+        STDMETHODIMP GetStatus(DESKTOP_SLIDESHOW_STATE*) override { return E_NOTIMPL; }
+        STDMETHODIMP Enable(BOOL) override { return E_NOTIMPL; }
+
+    private:
+        static HRESULT CopyString(LPCWSTR text, LPWSTR* result)
+        {
+            auto copy = wil::make_cotaskmem_string_nothrow(text);
+            *result = copy.release();
+            return *result ? S_OK : E_OUTOFMEMORY;
+        }
+    };
+
     class DesktopWallpaperTests
     {
         BEGIN_TEST_CLASS(DesktopWallpaperTests)
@@ -22,10 +85,13 @@ namespace TerminalAppUnitTests
         TEST_METHOD(NegativeMonitorCoordinates);
         TEST_METHOD(MonitorBoundaryAtMixedDpi);
         TEST_METHOD(WindowMovement);
+        TEST_METHOD(DesktopWallpaperSelection);
         TEST_METHOD(SolidColorRendering);
         TEST_METHOD(TiledAndSpanningWallpaperRendering);
         TEST_METHOD(DesktopWallpaperEffects);
         TEST_METHOD(NativeWallpaperPresentation);
+        TEST_METHOD(WallpaperDeviceRecovery);
+        TEST_METHOD(WallpaperWithDisconnectedMonitor);
     };
 
     void DesktopWallpaperTests::WallpaperLayouts()
@@ -101,6 +167,28 @@ namespace TerminalAppUnitTests
             VERIFY_ARE_EQUAL(static_cast<float>((1920 - origin) / 1.5), rect.left);
             VERIFY_ARE_EQUAL(-80.0f, rect.top);
             VERIFY_ARE_EQUAL(880.0f, rect.bottom);
+        }
+    }
+
+    void DesktopWallpaperTests::DesktopWallpaperSelection()
+    {
+        for (const auto path : { L"", L"desktopWallpaper", L"DESKTOPWALLPAPER" })
+        {
+            VERIFY_IS_TRUE(ShouldUseDesktopRelativeWallpaper(true, true, path));
+            VERIFY_IS_FALSE(ShouldUseDesktopRelativeWallpaper(false, true, path));
+            VERIFY_IS_FALSE(ShouldUseDesktopRelativeWallpaper(true, false, path));
+            VERIFY_IS_FALSE(ShouldUseDesktopRelativeWallpaper(false, false, path));
+        }
+
+        for (const auto path : { L"C:\\background.png", L"ms-appx:///Images/background.png", L"https://example.com/background.png", L"desktopWallpaper.png" })
+        {
+            for (const auto wholeWindow : { false, true })
+            {
+                for (const auto relativeToDesktop : { false, true })
+                {
+                    VERIFY_IS_FALSE(ShouldUseDesktopRelativeWallpaper(wholeWindow, relativeToDesktop, path));
+                }
+            }
         }
     }
 
@@ -245,8 +333,59 @@ namespace TerminalAppUnitTests
         check(effects, 60, 95, 130);
         effects.blur = 2;
         check(effects, 60, 95, 130);
+        effects.blur = 100;
+        check(effects, 60, 95, 130);
+        effects.blur = 100.5f;
+        VERIFY_THROWS(Render(source, DWPOS_FILL, RGB(0, 0, 0), effects), wil::ResultException);
         effects.blur = -1;
         VERIFY_THROWS(Render(source, DWPOS_FILL, RGB(0, 0, 0), effects), wil::ResultException);
+    }
+
+    void DesktopWallpaperTests::WallpaperWithDisconnectedMonitor()
+    {
+        const auto wallpaper = Microsoft::WRL::Make<WallpaperWithStaleMonitor>();
+        VERIFY_IS_NOT_NULL(wallpaper.Get());
+        for (const auto result : { S_FALSE, E_FAIL, E_INVALIDARG })
+        {
+            wallpaper->staleResult = result;
+            const auto monitors = Load(wallpaper.Get());
+            VERIFY_ARE_EQUAL(size_t{ 2 }, monitors.size());
+            VERIFY_ARE_EQUAL(-16L, monitors[0].bounds.left);
+            VERIFY_ARE_EQUAL(0L, monitors[1].bounds.left);
+            VERIFY_ARE_EQUAL(16, monitors[0].bitmap.PixelWidth());
+            VERIFY_ARE_EQUAL(16, monitors[1].bitmap.PixelHeight());
+            VERIFY_IS_FALSE(wallpaper->staleWallpaperRequested);
+        }
+    }
+
+    void DesktopWallpaperTests::WallpaperDeviceRecovery()
+    {
+        wil::unique_hwnd parent{ CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, L"STATIC", L"", WS_POPUP, 0, 0, 64, 64, nullptr, nullptr, GetModuleHandleW(nullptr), nullptr) };
+        VERIFY_IS_NOT_NULL(parent.get());
+        const MonitorSource originalSources[]{ { { 0, 0, 64, 64 }, L"" } };
+        const auto cachedMonitors = Render(originalSources, DWPOS_FILL, RGB(12, 34, 56));
+        auto presenter = std::make_unique<Presenter>(parent.get());
+        presenter->SetMonitors(cachedMonitors);
+        presenter->Position({ 0, 0, 64, 64 }, 0, 0, 1);
+        VERIFY_IS_TRUE(presenter->IsDeviceValid());
+
+        presenter.reset();
+
+        presenter = std::make_unique<Presenter>(parent.get());
+        presenter->SetMonitors(cachedMonitors);
+        presenter->Position({ 0, 0, 64, 64 }, 0, 0, 1);
+        VERIFY_IS_TRUE(presenter->IsDeviceValid());
+
+        const MonitorSource changedSources[]{
+            { { -64, 0, 0, 64 }, L"" },
+            { { 0, -32, 128, 64 }, L"" }
+        };
+        const auto changedMonitors = Render(changedSources, DWPOS_FILL, RGB(56, 34, 12));
+        presenter.reset();
+        presenter = std::make_unique<Presenter>(parent.get());
+        presenter->SetMonitors(changedMonitors);
+        presenter->Position({ 0, 0, 64, 64 }, -32, 0, 1);
+        VERIFY_IS_TRUE(presenter->IsDeviceValid());
     }
 
     void DesktopWallpaperTests::NativeWallpaperPresentation()
@@ -259,11 +398,16 @@ namespace TerminalAppUnitTests
         };
         const auto monitors = Render(sources, DWPOS_FILL, RGB(12, 34, 56));
         {
+            wil::unique_hwnd content{ CreateWindowExW(0, L"STATIC", L"", WS_CHILD, 0, 0, 64, 64, parent.get(), nullptr, GetModuleHandleW(nullptr), nullptr) };
+            VERIFY_IS_NOT_NULL(content.get());
             Presenter presenter{ parent.get() };
+            VERIFY_ARE_EQUAL(content.get(), GetWindow(parent.get(), GW_CHILD));
             presenter.SetMonitors(monitors);
             for (const auto x : { -32, -1, 0, 1, 32 })
             {
-                presenter.Position({ 0, 0, 64, 64 }, x, 0, 1);
+                presenter.Position({ 8, 16, 72, 80 }, x, 0, 1);
+                VERIFY_ARE_EQUAL(content.get(), GetWindow(parent.get(), GW_CHILD));
+                VERIFY_IS_NULL(GetWindow(content.get(), GW_HWNDNEXT));
             }
             presenter.Position({ 0, 0, 64, 64 }, 0, 0, 0.5f);
             presenter.Position({}, 0, 0, 0.5f);
@@ -272,5 +416,10 @@ namespace TerminalAppUnitTests
             presenter.Position({ 0, 0, 32, 32 }, 0, 0, 1);
         }
         VERIFY_IS_NULL(GetWindow(parent.get(), GW_CHILD));
+        {
+            Presenter presenter{ parent.get() };
+            presenter.SetMonitors(monitors);
+            presenter.Position({ 0, 0, 64, 64 }, 0, 0, 1);
+        }
     }
 }

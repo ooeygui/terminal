@@ -2912,15 +2912,15 @@ This action is applied immediately and cannot be undone.</value>
     <comment>Header for a switch enabling desktop-relative wallpaper, also known as pseudo-transparency.</comment>
   </data>
   <data name="Globals_BackgroundImageRelativeToDesktop.Description" xml:space="preserve">
-    <value>Keep wallpaper aligned with each monitor as the window moves, without showing windows behind Terminal (pseudo-transparency). Select "Use desktop wallpaper" in the profile's Appearance settings, or under Defaults to apply it to all profiles without their own background image.</value>
-    <comment>Description of desktop-relative wallpaper and its profile background image prerequisite. "Use desktop wallpaper", "Appearance", and "Defaults" refer to existing Settings UI labels.</comment>
+    <value>Use desktop wallpaper when the active profile has no background image or selects "Use desktop wallpaper". Keep it aligned with each monitor as the window moves, without showing windows behind Terminal (pseudo-transparency). A custom profile background image takes precedence.</value>
+    <comment>Description of desktop-relative wallpaper as a fallback for profiles without a background image. "Use desktop wallpaper" refers to an existing Settings UI label.</comment>
   </data>
   <data name="Globals_DesktopWallpaperBlur.Header" xml:space="preserve">
     <value>Wallpaper blur</value>
     <comment>Header for a slider adjusting Gaussian blur of desktop-relative wallpaper.</comment>
   </data>
   <data name="Globals_DesktopWallpaperBlur.Description" xml:space="preserve">
-    <value>Blur the desktop wallpaper by 0 to 250 physical pixels. Set to 0 for a sharp image.</value>
+    <value>Blur the desktop wallpaper by 0 to 100 physical pixels. Set to 0 for a sharp image.</value>
     <comment>Description of the wallpaper blur slider, including units and range.</comment>
   </data>
   <data name="Globals_DesktopWallpaperBlurSlider.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">

@@ -5,10 +5,11 @@
 
 #include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 #include <shobjidl_core.h>
 #include <dcomp.h>
-#include <wil/resource.h>
+#include <d3d11.h>
 #include <winrt/Windows.Graphics.Imaging.h>
 
 namespace TerminalApp::DesktopWallpaper
@@ -39,6 +40,7 @@ namespace TerminalApp::DesktopWallpaper
     {
     public:
         explicit Presenter(HWND parent);
+        bool IsDeviceValid() const;
         void SetMonitors(std::span<const Monitor> monitors);
         void Position(const RECT& bounds, double originX, double originY, float opacity);
 
@@ -49,7 +51,7 @@ namespace TerminalApp::DesktopWallpaper
             winrt::com_ptr<IDCompositionVisual2> visual;
         };
 
-        wil::unique_hwnd _window;
+        winrt::com_ptr<ID3D11Device> _graphicsDevice;
         winrt::com_ptr<IDCompositionDesktopDevice> _device;
         winrt::com_ptr<IDCompositionTarget> _target;
         winrt::com_ptr<IDCompositionVisual2> _root;
@@ -63,7 +65,10 @@ namespace TerminalApp::DesktopWallpaper
         bool _visible{ false };
     };
 
+    bool ShouldUseDesktopRelativeWallpaper(bool useBackgroundImageForWindow, bool relativeToDesktop, std::wstring_view imagePath) noexcept;
+
     // Called off the UI thread. Movement reuses these bitmaps.
     std::vector<Monitor> Load(const Effects& effects = {});
+    std::vector<Monitor> Load(IDesktopWallpaper* wallpaper, const Effects& effects = {});
     std::vector<Monitor> Render(std::span<const MonitorSource> sources, DESKTOP_WALLPAPER_POSITION position, COLORREF background, const Effects& effects = {});
 }
