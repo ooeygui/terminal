@@ -4202,7 +4202,8 @@ namespace winrt::TerminalApp::implementation
                                 TraceLoggingFloat64(page->DesktopWallpaperCanvas().ActualWidth(), "width"),
                                 TraceLoggingFloat64(page->DesktopWallpaperCanvas().ActualHeight(), "height"),
                                 TraceLoggingFloat64(page->DesktopWallpaperCanvas().Opacity(), "opacity"));
-                            co_return;
+                            // The shell can still return the old layout after a display change.
+                            // Keep refreshing through the bounded delays even after a successful load.
                         }
                     }
                 }
